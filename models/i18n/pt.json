@@ -1,0 +1,193 @@
+{
+    "welcome": "Olá e obrigado pelo convite! :tada:\n\nEu sou **{{ .name }}**, o seu novo assistente do Discord dedicado ao jogo **{{ .game.Name }}** {{ .gameLogo }}!\nMeu objetivo? Oferecer ferramentas práticas e divertidas para melhorar sua experiência de jogo. :fire:\nAqui estão alguns dos meus superpoderes:\n* :sparkles: Gerenciar o diretório de artesãos e membros alinhados da sua guilda\n\nCurioso para ver tudo o que eu posso fazer? Digite {{ .help }} e explore todos os meus comandos! :smirk:\n\n<@{{ .owner }}>, como administrador de **{{ .guild }}**, você pode acessar recursos avançados para configurar meus serviços.\nCom `/{{ .config }}`, configure:\n* :globe_with_meridians: O servidor principal do jogo para sua guilda\n\nParece épico, não é? Mal posso esperar para colaborar com você e tornar este servidor ainda mais divertido e útil! :smile:",
+    "about": {
+        "help": {
+            "overview": "fornece informações sobre mim e uma maneira de obter ajuda",
+            "detailed": "fornece informações detalhadas sobre mim (link de convite, código-fonte, tratamento de dados privados...) e uma maneira de obter ajuda, se necessário (Discord de suporte, Twitter)",
+            "source": "",
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/about_PT.webp"
+        },
+        "title": "{{ .name }} versão {{ .version }}",
+        "desc": "Bot do Discord dedicado ao jogo **{{ .game.Name }}** {{ .gameLogo }}!",
+        "support": {
+            "title": ":bulb: Servidor de suporte",
+            "desc": "Está com problemas no uso? Uma sugestão? Não hesite em entrar no [servidor Discord]({{ .discord }}) de suporte!"
+        },
+        "twitter": {
+            "title": "{{ .twitterLogo }} Twitter",
+            "desc": "Também estou no [Twitter]({{ .twitter }}): lá você encontrará as últimas novidades!"
+        },
+        "opensource": {
+            "title": "{{ .githubLogo }} Código aberto",
+            "desc": "Todo o meu código-fonte está licenciado sob GPL-3.0 e acessível no [Github]({{ .github }})"
+        },
+        "free": {
+            "title": ":money_with_wings: Gratuito",
+            "desc": "Todas as minhas funcionalidades são gratuitas. Você pode contribuir financeiramente, mas não se endivide! [Paypal]({{ .paypal }})"
+        },
+        "privacy": {
+            "title": ":shield: Privacidade dos dados",
+            "desc": "Cuido para coletar apenas o mínimo de dados necessários para funcionar. Mais informações no servidor de suporte!"
+        },
+        "graphist": {
+            "title": ":art: Visuais",
+            "desc": "Visuais feitos pelos incríveis [{{ .Elycann.Name }}]({{ .Elycann.URL }}) e [{{ .Colibry.Name }}]({{ .Colibry.URL }})!"
+        },
+        "footer": "Algumas ilustrações são propriedade do Ankama Studio - Todos os direitos reservados"
+    },
+    "align": {
+        "help": {
+            "overview": "gerencia o livro de alinhamentos",
+            "detailed": {
+                "get": "exibe o livro de jogadores alinhados do seu servidor Discord\n   - O campo `city` é opcional e corresponde à cidade à qual os jogadores juraram lealdade. Se não especificado, o diretório será exibido sem considerar esse filtro. *__Exemplo__:Bonta*\n - O campo `order` é opcional e corresponde à ordem que os jogadores se uniram. Se não especificado, o diretório será exibido sem considerar esse filtro. *__Exemplo__:Espírito*\n - O campo `server` é opcional e corresponde ao servidor de jogo desejado. Se não especificado, será usado o servidor de jogo definido para a guilda do Discord (veja `config`). *__Exemplo__:Boune*",
+                "set": "registra seu alinhamento no livro, independentemente do servidor Discord; este registro não pode ser feito para outros.\n   - O campo `city` é obrigatório e corresponde à cidade à qual os jogadores juraram lealdade. *__Exemplo__:Bonta*\n - O campo `order` é obrigatório e corresponde à ordem que os jogadores se uniram. *__Exemplo__:Espírito*\n - O campo `level` é obrigatório e corresponde ao nível de alinhamento entre 0 e 100, sendo 0 a remoção do diretório. *__Exemplo__:100*\n - O campo `server` é opcional e corresponde ao servidor de jogo desejado. Se não especificado, será usado o servidor de jogo definido para a guilda do Discord (veja `config`). *__Exemplo__:Boune*"
+            },
+            "source": "Os dados coletados são usados apenas para o meu funcionamento correto.",
+            "tutorial": {
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_get_PT.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_set_PT.webp"
+            }
+        },
+        "success": "O livro de alinhamentos foi atualizado!",
+        "embed": {
+            "believers": {
+                "title": "Lista de alinhados",
+                "description": "{{ if .believers }}*{{ .total }} resultado{{ if gt .total 1 }}s{{ end }}, página {{ .page }} de {{ .pages }}*\n\n{{ range .believers}}{{ .City }} {{ .Order }} niv. {{ .Level }}: **{{ .Username }}**\n{{ end }}{{ else }}Nenhum alinhado encontrado no momento!{{ end }}",
+                "placeholders": {
+                    "cities": "Todas as cidades",
+                    "city": "Escolha uma cidade",
+                    "orders": "Todas as ordens",
+                    "order": "Escolha uma ordem"
+                }
+            },
+            "beliefs": {
+                "title": "Alinhamentos de {{ .username }}",
+                "description": "{{ if .beliefs }}{{ range .beliefs}}{{ .City }} {{ .Order }} niv. {{ .Level }}\n{{ end }}{{ else }}Nenhum alinhamento por enquanto!{{ end }}"
+            }
+        }
+    },
+    "config": {
+        "help": {
+            "overview": "permite configurar o servidor do jogo da guilda ou de um canal",
+            "detailed": {
+                "get": "exibe minha configuração atual para este servidor Discord",
+                "server": "vincula o servidor Discord a um servidor de jogo\n  - O campo `server` é obrigatório e corresponde a um servidor de jogo. Após especificado, será o valor padrão para alguns comandos como `align` ou `job`. *__Exemplo__:Boune*\n  - O campo `channel` é opcional e serve para vincular um servidor de jogo a um canal específico. Esse vínculo tem prioridade sobre o vínculo ao servidor Discord. *__Exemplo__:#geral*"
+            },
+            "tutorial": {
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_get_PT.webp",
+                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_server_PT.webp"
+            },
+            "source": "Os dados coletados são usados apenas para meu funcionamento correto."
+        },
+        "success": "Alteração registrada!",
+        "embed": {
+            "description": "{{ if .server }}{{ .server.Emoji }} **{{ .server.Name }}** é o servidor atual da guilda!{{ else }}Nenhum servidor {{ .game.Name }} está vinculado à guilda!{{ end }}",
+            "server": {
+                "name": "{{ .gameLogo }} Canais vinculados a servidores",
+                "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Server.Emoji }} **{{ .Server.Name }}**\n{{ end }}{{ else }}Nenhum canal configurado!{{ end }}"
+            }
+        }
+    },
+    "help": {
+        "help": {
+            "overview": "fornece ajuda para os comandos",
+            "detailed": [
+                "É um pouco estranho consultar ajuda sobre o comando que você está usando... parece que você já está indo muito bem! :kissing_smiling_eyes:",
+                "Fornece assistência sobre o uso de comandos. *__Exemplo__::point_right: \\*você usando o comando\\**",
+                "Mesmo os melhores precisam de ajuda, mas isso é um pouco exagerado!",
+                "Bem... entre nós, você não vai se rebaixar a isso, certo? :rolling_eyes:",
+                "Ajuda. :nerd:"
+            ],
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/help.webp",
+            "source": ""
+        },
+        "command": {
+            "title": "Comando **{{ .command }}**{{ if .commandID }}: {{ .commandID }}{{ end }}",
+            "description": "{{ if .detail }}- {{ .detail.CommandID }}: {{ .detail.Description }}\n{{ else }}Nenhuma descrição detalhada disponível!{{ end }}{{ if .source}}\n\n*{{ .source }}*{{ end }}"
+        },
+        "commands": {
+            "title": "Lista de comandos",
+            "description": "{{ if .commands}}{{ range .commands }}- **{{ .Name }}**: {{ .Description }}\n{{ end }}{{ else }}Nenhum comando disponível!{{ end }}",
+            "choices": {
+                "menu": "Lista de comandos",
+                "command": "{{ .command }}",
+                "placeholder": "Ajuda detalhada de um comando específico"
+            },
+            "pages": {
+                "page": "{{ .page }}",
+                "placeholder": "Ajuda detalhada de um subcomando"
+            }
+        }
+    },
+    "job": {
+        "help": {
+            "overview": "gerencia o diretório de artesãos",
+            "detailed": {
+                "get": "exibe o diretório de jogadores artesãos do seu servidor Discord\n   - O campo `job` é obrigatório e corresponde a uma profissão no jogo. *__Exemplo__: Lenhador*\n - O campo `server` é opcional e corresponde ao servidor de jogo desejado. Se não especificado, será usado o servidor de jogo definido para a guilda do Discord (veja `config`). *__Exemplo__: Boune*",
+                "set": "registra sua profissão no diretório, independentemente do servidor Discord; este registro não pode ser feito para outras pessoas.\n    - O campo `job` é obrigatório e corresponde a uma profissão no jogo. *__Exemplo__: Lenhador*\n - O campo `level` é obrigatório e corresponde ao nível da profissão entre 0 e 100, sendo 0 a remoção do diretório. *__Exemplo__: 100*\n - O campo `server` é opcional e corresponde ao servidor de jogo desejado. Se não especificado, será usado o servidor de jogo definido para a guilda do Discord (veja `config`). *__Exemplo__: Boune*"
+            },
+            "tutorial": {
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_get_PT.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_set_PT.webp"
+            },
+            "source": "Os dados coletados são usados apenas para o meu funcionamento correto."
+        },
+        "success": "O diretório de artesãos foi atualizado!",
+        "embed": {
+            "craftsmen": {
+                "title": "Lista de {{ .job }}s",
+                "description": "{{ if .craftsmen }}*{{ .total }} resultado{{ if gt .total 1 }}s{{ end }}, página {{ .page }} de {{ .pages }}*\n\n{{ range .craftsmen}}Nível {{ .Level }}: **{{ .Username }}**\n{{ end }}{{ else }}Nenhum artesão encontrado no momento!{{ end }}"
+            },
+            "craftsman": {
+                "title": "Profissões de {{ .username }}",
+                "description": "{{ if .jobs }}{{ range .jobs}}{{ .Job }} Nível {{ .Level }}\n{{ end }}{{ else }}Nenhuma profissão por enquanto!{{ end }}"
+            },
+            "choices": {
+                "placeholder": "Profissõ"
+            }
+        }
+    },
+    "default": {
+        "page": {
+            "first": "Primeira página",
+            "previous": "Página anterior",
+            "next": "Próxima página",
+            "last": "Última página"
+        },
+        "changelog": "Comandos Slash disponíveis!",
+        "footer": "{{ .name }} v{{ .version }} • {{ .changelog }}"
+    },
+    "checks": {
+        "city": {
+            "not_found": "Eita! '*{{ .value }}*' não corresponde a nenhuma cidade que eu conheça! :pensive:",
+            "too_many": "Uau! '*{{ .value }}*' corresponde a várias cidades ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "job": {
+            "not_found": "Aie! '*{{ .value }}*' não corresponde a nenhuma profissão que conheça. :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' corresponde a muitas profissões ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "level": {
+            "constraints": "O nível deve estar entre {{ .min }} e {{ .max }}. :grin:"
+        },
+        "order": {
+            "not_found": "Eita! '*{{ .value }}*' não corresponde a nenhuma ordem que eu conheça! :pensive:",
+            "too_many": "Uau! '*{{ .value }}*' corresponde a várias ordens ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "query": {
+            "constraints": "O campo deve ser preenchido! :grin:"
+        },
+        "server": {
+            "required": "Oops! Parece que não há nenhum servidor de {{ .game.Name }} vinculado ao seu clã (ou canal). Use a opção server, como `/job get job: Alquimista server: Boune`, ou vincule seu clã a um servidor com o comando `/config server`. :grin:",
+            "not_found": "Aie! '*{{ .value }}*' não corresponde a nenhum servidor que conheça. :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' corresponde a muitos servidores ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! Tente novamente selecionando um da lista existente. :slight_smile:"
+        }
+    },
+    "errors": {
+        "unavailable": "Meu cérebro não está respondendo agora :sweat: Me dê um minuto e tente novamente!",
+        "unknown_interaction": "Hmm, não conheço esta interação... Talvez venha de uma mensagem desatualizada, tente executar o comando novamente! :sweat_smile:"
+    },
+    "panic": [
+        "Encontrei um erro :frowning:... Isso será resolvido o mais rápido possível!",
+        "Oops, parece que falhei... Estou relatando este evento aos meus criadores, desculpe!"
+    ]
+}

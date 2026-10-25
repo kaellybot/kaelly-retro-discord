@@ -1,0 +1,208 @@
+package mappers
+
+import (
+	"slices"
+	"sort"
+
+	"github.com/bwmarrin/discordgo"
+	amqp "github.com/kaellybot/kaelly-amqp"
+	contract "github.com/kaellybot/kaelly-commands"
+	"github.com/kaellybot/kaelly-retro-discord/models/constants"
+	"github.com/kaellybot/kaelly-retro-discord/models/entities"
+	"github.com/kaellybot/kaelly-retro-discord/models/i18n"
+	"github.com/kaellybot/kaelly-retro-discord/services/books"
+	"github.com/kaellybot/kaelly-retro-discord/services/emojis"
+	"github.com/kaellybot/kaelly-retro-discord/services/servers"
+	"github.com/kaellybot/kaelly-retro-discord/utils/discord"
+	"github.com/kaellybot/kaelly-retro-discord/utils/translators"
+	di18n "github.com/kaysoro/discordgo-i18n"
+	"github.com/rs/zerolog/log"
+)
+
+type i18nJobExperience struct {
+	Job   string
+	Level int64
+}
+
+func MapBookJobGetBookRequest(jobID, serverID string, page int,
+	userIDs []string, authorID string, lg discordgo.Locale) *amqp.RabbitMQMessage {
+	request := requestBackbone(authorID, amqp.RabbitMQMessage_JOB_GET_BOOK_REQUEST, lg)
+	request.JobGetBookRequest = &amqp.JobGetBookRequest{
+		UserIds:  userIDs,
+		JobId:    jobID,
+		ServerId: serverID,
+		Offset:   int64(page) * constants.MaxBookRowPerEmbed,
+		Size:     constants.MaxBookRowPerEmbed,
+	}
+	return request
+}
+
+func MapBookJobGetUserRequest(userID, serverID, authorID string, lg discordgo.Locale) *amqp.RabbitMQMessage {
+	request := requestBackbone(authorID, amqp.RabbitMQMessage_JOB_GET_USER_REQUEST, lg)
+	request.JobGetUserRequest = &amqp.JobGetUserRequest{
+		UserId:   userID,
+		ServerId: serverID,
+	}
+	return request
+}
+
+func MapBookJobSetRequest(userID, jobID, serverID string, level int64,
+	lg discordgo.Locale) *amqp.RabbitMQMessage {
+	request := requestBackbone(userID, amqp.RabbitMQMessage_JOB_SET_REQUEST, lg)
+	request.JobSetRequest = &amqp.JobSetRequest{
+		UserId:   userID,
+		JobId:    jobID,
+		ServerId: serverID,
+		Level:    level,
+	}
+	return request
+}
+
+func MapJobBookToWebhook(answer *amqp.JobGetBookAnswer,
+	craftsmen []constants.JobUserLevel, jobService books.Service,
+	serverService servers.Service, emojiService emojis.Service,
+	lg discordgo.Locale) *discordgo.WebhookEdit {
+	return &discordgo.WebhookEdit{
+		Embeds:     mapJobBookToEmbeds(answer, craftsmen, jobService, serverService, lg),
+		Components: mapJobBookToComponents(answer, lg, jobService, emojiService),
+	}
+}
+
+func mapJobBookToComponents(answer *amqp.JobGetBookAnswer, lg discordgo.Locale,
+	jobService books.Service, emojiService emojis.Service) *[]discordgo.MessageComponent {
+	components := make([]discordgo.MessageComponent, 0)
+	jobID := answer.GetJobId()
+	serverID := answer.GetServerId()
+	crafter := func(page int) string {
+		return contract.CraftJobBookPageCustomID(jobID, serverID, page)
+	}
+
+	paginations := discord.GetPaginationButtons(int(answer.GetPage()), int(answer.GetPages()),
+		crafter, lg, emojiService)
+
+	if len(paginations) != 0 {
+		components = append(components,
+			discordgo.ActionsRow{
+				Components: paginations,
+			},
+		)
+	}
+
+	jobChoices := make([]discordgo.SelectMenuOption, 0)
+	for _, job := range jobService.GetJobs() {
+		jobChoices = append(jobChoices, discordgo.SelectMenuOption{
+			Label:   translators.GetEntityLabel(job, lg),
+			Value:   job.ID,
+			Default: job.ID == jobID,
+			Emoji:   emojiService.GetEntityEmoji(job.ID, constants.EmojiTypeJob),
+		})
+	}
+
+	components = append(components,
+		discordgo.ActionsRow{
+			Components: []discordgo.MessageComponent{
+				discordgo.SelectMenu{
+					CustomID:    contract.CraftJobBookSelectCustomID(serverID),
+					MenuType:    discordgo.StringSelectMenu,
+					Placeholder: di18n.Get(lg, "job.embed.choices.placeholder"),
+					Options:     jobChoices,
+				},
+			},
+		},
+	)
+
+	return &components
+}
+
+func mapJobBookToEmbeds(answer *amqp.JobGetBookAnswer, craftsmen []constants.JobUserLevel, jobService books.Service,
+	serverService servers.Service, lg discordgo.Locale) *[]*discordgo.MessageEmbed {
+	job, found := jobService.GetJob(answer.GetJobId())
+	if !found {
+		log.Warn().Str(constants.LogEntity, answer.GetJobId()).
+			Msgf("Cannot find job based on ID sent internally, continuing with empty job")
+		job = entities.Job{ID: answer.GetJobId()}
+	}
+
+	server, found := serverService.GetServer(answer.GetServerId())
+	if !found {
+		log.Warn().Str(constants.LogEntity, answer.GetServerId()).
+			Msgf("Cannot find server based on ID sent internally, continuing with empty server")
+		server = entities.Server{ID: answer.GetServerId()}
+	}
+
+	// Sorting a copy keeps the caller's slice untouched.
+	sortedCraftsmen := slices.Clone(craftsmen)
+	sort.SliceStable(sortedCraftsmen, func(i, j int) bool {
+		if sortedCraftsmen[i].Level == sortedCraftsmen[j].Level {
+			return sortedCraftsmen[i].Username < sortedCraftsmen[j].Username
+		}
+		return sortedCraftsmen[i].Level > sortedCraftsmen[j].Level
+	})
+
+	embed := discordgo.MessageEmbed{
+		Title: di18n.Get(lg, "job.embed.craftsmen.title", di18n.Vars{"job": translators.GetEntityLabel(job, lg)}),
+		Description: di18n.Get(lg, "job.embed.craftsmen.description", di18n.Vars{
+			"craftsmen": sortedCraftsmen,
+			"total":     answer.GetTotal(),
+			"page":      answer.GetPage() + 1,
+			"pages":     answer.GetPages(),
+		}),
+		Color:     job.Color,
+		Thumbnail: &discordgo.MessageEmbedThumbnail{URL: job.Icon},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text:    translators.GetEntityLabel(server, lg),
+			IconURL: server.Icon,
+		},
+	}
+
+	return &[]*discordgo.MessageEmbed{&embed}
+}
+
+func MapJobUserToEmbed(jobExperiences []*amqp.JobGetUserAnswer_JobExperience, member *discordgo.Member,
+	serverID string, jobService books.Service, serverService servers.Service,
+	locale amqp.Language) *[]*discordgo.MessageEmbed {
+	lg := i18n.MapAMQPLocale(locale)
+	server, found := serverService.GetServer(serverID)
+	if !found {
+		log.Warn().Str(constants.LogEntity, serverID).
+			Msgf("Cannot find server based on ID sent internally, continuing with empty server")
+		server = entities.Server{ID: serverID}
+	}
+
+	i18nJobXp := make([]i18nJobExperience, 0)
+	for _, jobXp := range jobExperiences {
+		job, foundJob := jobService.GetJob(jobXp.GetJobId())
+		if !foundJob {
+			log.Warn().Str(constants.LogEntity, jobXp.GetJobId()).
+				Msgf("Cannot find job based on ID sent internally, continuing with empty job")
+			job = entities.Job{ID: jobXp.GetJobId()}
+		}
+
+		i18nJobXp = append(i18nJobXp, i18nJobExperience{
+			Job:   translators.GetEntityLabel(job, lg),
+			Level: jobXp.GetLevel(),
+		})
+	}
+
+	sort.SliceStable(i18nJobXp, func(i, j int) bool {
+		if i18nJobXp[i].Level == i18nJobXp[j].Level {
+			return i18nJobXp[i].Job < i18nJobXp[j].Job
+		}
+		return i18nJobXp[i].Level > i18nJobXp[j].Level
+	})
+
+	userName, userIcon := mapMemberIdentity(member)
+
+	embed := discordgo.MessageEmbed{
+		Title:       di18n.Get(lg, "job.embed.craftsman.title", di18n.Vars{"username": userName}),
+		Description: di18n.Get(lg, "job.embed.craftsman.description", di18n.Vars{"jobs": i18nJobXp}),
+		Color:       constants.Color,
+		Thumbnail:   &discordgo.MessageEmbedThumbnail{URL: userIcon},
+		Footer: &discordgo.MessageEmbedFooter{
+			Text:    translators.GetEntityLabel(server, lg),
+			IconURL: server.Icon,
+		},
+	}
+
+	return &[]*discordgo.MessageEmbed{&embed}
+}

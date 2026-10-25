@@ -1,0 +1,59 @@
+package align
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/bwmarrin/discordgo"
+	amqp "github.com/kaellybot/kaelly-amqp"
+	"github.com/kaellybot/kaelly-retro-discord/commands"
+	"github.com/kaellybot/kaelly-retro-discord/models/constants"
+	"github.com/kaellybot/kaelly-retro-discord/models/mappers"
+	"github.com/kaellybot/kaelly-retro-discord/utils/discord"
+	"github.com/kaellybot/kaelly-retro-discord/utils/middlewares"
+	"github.com/rs/zerolog/log"
+)
+
+func (command *Command) userBook(ctx context.Context, s *discordgo.Session,
+	i *discordgo.InteractionCreate, _ middlewares.NextFunc) error {
+	server, err := getUserOptions(ctx)
+	if err != nil {
+		return err
+	}
+
+	member, memberFound := i.ApplicationCommandData().Resolved.Members[i.ApplicationCommandData().TargetID]
+	user, userFound := i.ApplicationCommandData().Resolved.Users[i.ApplicationCommandData().TargetID]
+	if !memberFound || !userFound {
+		return fmt.Errorf("%w: no member and user resolved for target %q",
+			commands.ErrInvalidInteraction, i.ApplicationCommandData().TargetID)
+	}
+	member.User = user
+
+	authorID := discord.GetUserID(i.Interaction)
+	msg := mappers.MapBookAlignGetUserRequest(member.User.ID, server.ID, authorID, i.Locale)
+	return command.requestManager.Request(s, i, constants.AlignRequestRoutingKey,
+		msg, command.userRespond,
+		map[string]any{userProperty: member})
+}
+
+func (command *Command) userRespond(_ context.Context, s *discordgo.Session,
+	i *discordgo.InteractionCreate, message *amqp.RabbitMQMessage, properties map[string]any) error {
+	if message.Status != amqp.RabbitMQMessage_SUCCESS {
+		return fmt.Errorf("%w: %v", commands.ErrInvalidAnswerMessage, message.GetStatus())
+	}
+
+	member, ok := properties[userProperty].(*discordgo.Member)
+	if !ok {
+		return fmt.Errorf("%w: %v", commands.ErrRequestPropertyNotFound, userProperty)
+	}
+
+	_, err := s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds: mappers.MapAlignUserToEmbed(message.AlignGetUserAnswer.Beliefs, member, message.AlignGetUserAnswer.ServerId,
+			command.bookService, command.emojiService, command.serverService, message.Language),
+	})
+	if err != nil {
+		log.Warn().Err(err).Msgf("Cannot respond to interaction after receiving internal answer, ignoring request")
+	}
+
+	return nil
+}

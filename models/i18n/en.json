@@ -1,0 +1,193 @@
+{
+    "welcome": "Hello and thanks for the invitation! :tada:\n\nI’m **{{ .name }}**, your new Discord assistant dedicated to the game **{{ .game.Name }}** {{ .gameLogo }}!\nMy goal? To offer you practical and fun tools to spice up your gaming experience. :fire:\nHere are some of my superpowers: \n* :sparkles: Manage the directory of artisans and aligned members in your guild\n\nCurious to see everything I can do? Type {{ .help }} and explore all my commands! :smirk:\n\n<@{{ .owner }}>, as the administrator of **{{ .guild }}**, you can access advanced features to configure my services.\nWith `/{{ .config }}`, set up:\n* :globe_with_meridians: The main game server for your guild\n\nSounds epic, right? Can’t wait to team up with you to make this server even more fun and useful! :smile:",
+    "about": {
+        "help": {
+            "overview": "provides information about me and a way to get help",
+            "detailed": "provides detailed information about me (invitation link, source code, handling of private data...) and a way to get help if needed (support Discord, Twitter)",
+            "source": "",
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/about_EN.webp"
+        },
+        "title": "{{ .name }} version {{ .version }}",
+        "desc": "Discord bot dedicated to the **{{ .game.Name }}** {{ .gameLogo }} game!",
+        "support": {
+            "title": ":bulb: Support server",
+            "desc": "You have a problem with its use? A suggestion? Feel free to join the support [Discord server]({{ .discord }})!"
+        },
+        "twitter": {
+            "title": "{{ .twitterLogo }} Twitter",
+            "desc": "I'm also on [Twitter]({{ .twitter }}): you will find the last news!"
+        },
+        "opensource": {
+            "title": "{{ .githubLogo }} Open source",
+            "desc": "All my source code is licensed under GPL-3.0 and accessible on [Github]({{ .github }})"
+        },
+        "free": {
+            "title": ":money_with_wings: Free",
+            "desc": "All my features are free. You can participate financially but do not go into the red! [Paypal]({{ .paypal }})"
+        },
+        "privacy": {
+            "title": ":shield: Data privacy",
+            "desc": "I take care to collect the strict minimum data needed to run. More informations on the support server!"
+        },
+        "graphist": {
+            "title": ":art: Visuals",
+            "desc": "Visuals made by the great [{{ .Elycann.Name }}]({{ .Elycann.URL }}) and [{{ .Colibry.Name }}]({{ .Colibry.URL }})!"
+        },
+        "footer": "Some illustrations are the Ankama Studio property - All rights reserved"
+    },
+    "align": {
+        "help": {
+            "overview": "handles the alignment book",
+            "detailed": {
+                "get": "displays the book of aligned players on your Discord server\n   - The `city` field is optional and corresponds to the city to which players have pledged allegiance. If not specified, the directory is displayed without considering this filter. *__Example__:Bonta*\n - The `order` field is optional and corresponds to the order joined by players. If not specified, the directory is displayed without considering this filter. *__Example__:Spirit*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*",
+                "set": "records your alignment in the book, independently of the Discord server; this recording cannot be done for others.\n   - The `city` field is mandatory and corresponds to the city to which players have pledged allegiance. *__Example__:Bonta*\n - The `order` field is mandatory and corresponds to the order joined by players. *__Example__:Spirit*\n - The `level` field is mandatory and corresponds to the alignment level between 0 and 100, with 0 indicating removal from the directory. *__Example__:100*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*"
+            },
+            "tutorial": {
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_get_EN.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_set_EN.webp"
+            },
+            "source": "The collected data is used only for my proper functioning."
+        },
+        "success": "Alignment book updated!",
+        "embed": {
+            "believers": {
+                "title": "Aligned list",
+                "description": "{{ if .believers }}*{{ .total }} result{{ if gt .total 1 }}s{{ end }}, page {{ .page }} on {{ .pages }}*\n\n{{ range .believers}}{{ .City }} {{ .Order }} lvl. {{ .Level }}: **{{ .Username }}**\n{{ end }}{{ else }}No aligned found at this moment!{{ end }}",
+                "placeholders": {
+                    "cities": "All cities",
+                    "city": "Choose a city",
+                    "orders": "All orders",
+                    "order": "Choose an order"
+                }
+            },
+            "beliefs": {
+                "title": "{{ .username }} alignments",
+                "description": "{{ if .beliefs }}{{ range .beliefs}}{{ .City }} {{ .Order }} lvl. {{ .Level }}\n{{ end }}{{ else }}No alignment for the moment!{{ end }}"
+            }
+        }
+    },
+    "config": {
+        "help": {
+            "overview": "permits to configure the game server of the guild or of a channel",
+            "detailed": {
+                "get": "displays my current configuration for this Discord server",
+                "server": "links the Discord server to a game server\n  - The `server` field is mandatory and corresponds to a game server. Once specified, it will be the default value for certain commands such as `align` or `job`. *__Example__:Boune*\n  - The `channel` field is optional and is used to link a game server to a specific channel. This link takes priority over the link to the Discord server. *__Example__:#general*"
+            },
+            "tutorial": {
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_get_EN.webp",
+                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_server_EN.webp"
+            },
+            "source": "The collected data is used only for my proper functioning."
+        },
+        "success": "Change take into account!",
+        "embed": {
+            "description": "{{ if .server }}{{ .server.Emoji }} **{{ .server.Name }}** is the current guild server!{{ else }}No {{ .game.Name }} server is linked to the guild!{{ end }}",
+            "server": {
+                "name": "{{ .gameLogo }} Channels linked to servers",
+                "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Server.Emoji }} **{{ .Server.Name }}**\n{{ end }}{{ else }}No configured channels!{{ end }}"
+            }
+        }
+    },
+    "help": {
+        "help": {
+            "overview": "provides help for commands",
+            "detailed": [
+                "It's a bit strange to consult help about the command you're currently using... it seems like you're already doing quite well! :kissing_smiling_eyes:",
+                "Provides assistance on command usage. *__Example__::point_right: \\*you using the command\\**",
+                "Even the best need help, but you're pushing it a bit too far!",
+                "Well... between us, you're not going to stoop to that, are you? :rolling_eyes:",
+                "It helps. :nerd:"
+            ],
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/help.webp",
+            "source": ""
+        },
+        "command": {
+            "title": "**{{ .command }}** command{{ if .commandID }}: {{ .commandID }}{{ end }}",
+            "description": "{{ if .detail }}- {{ .detail.CommandID }}: {{ .detail.Description }}\n{{ else }}No detailed description available!{{ end }}{{ if .source}}\n\n*{{ .source }}*{{ end }}"
+        },
+        "commands": {
+            "title": "Commands list",
+            "description": "{{ if .commands}}{{ range .commands }}- **{{ .Name }}**: {{ .Description }}\n{{ end }}{{ else }}No command available!{{ end }}",
+            "choices": {
+                "menu": "Commands list",
+                "command": "{{ .command }}",
+                "placeholder": "Detailed help from a particular command"
+            },
+            "pages": {
+                "page": "{{ .page }}",
+                "placeholder": "Detailed help from subcommand"
+            }
+        }
+    },
+    "job": {
+        "help": {
+            "overview": "handles the craftsmen book",
+            "detailed": {
+                "get": "displays the craftsmen players on your Discord server\n   - The `job` field is mandatory and corresponds to a profession in the game. *__Example__:Lumberjack*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*",
+                "set": "records your profession in the book, independently of the Discord server; this recording cannot be done for others.\n    - The `job` field is mandatory and corresponds to a profession in the game. *__Example__:Lumberjack*\n - The `level` field is mandatory and corresponds to the job level between 0 and 100, with 0 indicating removal from the directory. *__Example__:100*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*"
+            },
+            "tutorial": {
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_get_EN.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_set_EN.webp"
+            },
+            "source": "The collected data is used only for my proper functioning."
+        },
+        "success": "Craftsmen book updated!",
+        "embed": {
+            "craftsmen": {
+                "title": "{{ .job }}s list",
+                "description": "{{ if .craftsmen }}*{{ .total }} result{{ if gt .total 1 }}s{{ end }}, page {{ .page }} on {{ .pages }}*\n\n{{ range .craftsmen}}Lvl. {{ .Level }}: **{{ .Username }}**\n{{ end }}{{ else }}No craftsman found at this moment!{{ end }}"
+            },
+            "craftsman": {
+                "title": "{{ .username }} jobs",
+                "description": "{{ if .jobs }}{{ range .jobs}}{{ .Job }} Lvl. {{ .Level }}\n{{ end }}{{ else }}No job for the moment!{{ end }}"
+            },
+            "choices": {
+                "placeholder": "Job"
+            }
+        }
+    },
+    "default": {
+        "page": {
+            "first": "First page",
+            "previous": "Previous page",
+            "next": "Next page",
+            "last": "Last page"
+        },
+        "changelog": "Slash commands available!",
+        "footer": "{{ .name }} v{{ .version }} • {{ .changelog }}"
+    },
+    "checks": {
+        "city": {
+            "not_found": "Oops! '*{{ .value }}*' doesn't match any city I know! :pensive:",
+            "too_many": "Yikes! '*{{ .value }}*' matches several cities ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "job": {
+            "not_found": "Aie! '*{{ .value }}*' does not correspond to any jobs I know! :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' matches too many jobs ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "level": {
+            "constraints": "The level must be between {{ .min }} and {{ .max }}! :grin:"
+        },
+        "order": {
+            "not_found": "Oops! '*{{ .value }}*' doesn't match any order I know! :pensive:",
+            "too_many": "Yikes! '*{{ .value }}*' matches several orders ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "query": {
+            "constraints": "The field must be filled! :grin:"
+        },
+        "server": {
+            "required": "Oops! It seems no {{ .game.Name }} server is linked to your guild (or your channel), use the server option like `/job get job: Alchemist server: Boune` or link your guild to a server with `/config server` command :grin:",
+            "not_found": "Aie! '*{{ .value }}*' does not correspond to any servers I know! :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' matches too many servers ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! Retry by selecting an existing one in the list :slight_smile:"
+        }
+    },
+    "errors": {
+        "unavailable": "My brain is not answering right now :sweat: Give me a minute and try again!",
+        "unknown_interaction": "Hmm, I don't know this interaction... It may come from an outdated message, try the command again! :sweat_smile:"
+    },
+    "panic": [
+        "I have encountered an error :frowning:... This will be processed as soon as possible!",
+        "Oops, it seems I've crashed... I'm reporting this event to my creators, sorry!"
+    ]
+}

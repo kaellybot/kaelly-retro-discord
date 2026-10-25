@@ -1,0 +1,331 @@
+package config
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/bwmarrin/discordgo"
+	amqp "github.com/kaellybot/kaelly-amqp"
+	contract "github.com/kaellybot/kaelly-commands"
+	"github.com/kaellybot/kaelly-retro-discord/commands"
+	"github.com/kaellybot/kaelly-retro-discord/models/constants"
+	"github.com/kaellybot/kaelly-retro-discord/models/entities"
+	"github.com/kaellybot/kaelly-retro-discord/utils/testutils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// guildSession returns a session where the current and the other channels are
+// cached text channels of the guild.
+func guildSession(t *testing.T) (*discordgo.Session, *testutils.FakeDiscord) {
+	t.Helper()
+	s, fake := testutils.NewDiscordSession(t)
+	addGuild(t, s, textChannel(currentChannel), textChannel(otherChannel))
+	return s, fake
+}
+
+func singleRequest(t *testing.T, f *fixture) requestCall {
+	t.Helper()
+	require.Len(t, f.manager.calls, 1)
+	call := f.manager.calls[0]
+	assert.Equal(t, constants.ConfigurationRequestRoutingKey, call.routingKey)
+	assert.Equal(t, authorID, call.message.UserID)
+	assert.Equal(t, amqp.Language_FR, call.message.Language)
+	assert.Equal(t, constants.GetGame().AMQPGame, call.message.Game)
+	return call
+}
+
+// ---- get ----
+
+func TestHandle_GetRequestsGuildConfiguration(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigGetSubCommandName)))
+
+	call := singleRequest(t, f)
+	assert.Equal(t, amqp.RabbitMQMessage_CONFIGURATION_GET_REQUEST, call.message.Type)
+	assert.Equal(t, guildID, call.message.GetConfigurationGetRequest().GetGuildId())
+	assert.Empty(t, call.properties)
+	assert.Empty(t, fake.Requests(), "the answer is sent by the callback only")
+}
+
+func TestHandle_RequestFailureIsReported(t *testing.T) {
+	errBroker := errors.New("broker down")
+	f := newFixture(t)
+	f.manager.err = errBroker
+	s, fake := testutils.NewDiscordSession(t)
+
+	err := f.cmd.Handle(s, configCommand(contract.ConfigGetSubCommandName))
+
+	require.ErrorIs(t, err, errBroker)
+	assert.Empty(t, fake.Requests(), "the router answers the caller, not the command")
+}
+
+func TestHandle_MessageComponentsAreIgnored(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+
+	require.NoError(t, f.cmd.Handle(s, interaction(discordgo.InteractionMessageComponent,
+		discordgo.MessageComponentInteractionData{CustomID: "/config"})))
+	assert.Empty(t, f.manager.calls)
+	assert.Empty(t, fake.Requests())
+}
+
+// ---- server ----
+
+func TestHandle_ServerBindsResolvedServerToChannel(t *testing.T) {
+	f := newFixture(t)
+	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
+	s, fake := guildSession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
+		stringOption(contract.ConfigServerOptionName, "dja"), otherChannelOption())))
+
+	call := singleRequest(t, f)
+	assert.Equal(t, amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_REQUEST, call.message.Type)
+	req := call.message.GetConfigurationSetServerRequest()
+	assert.Equal(t, guildID, req.GetGuildId())
+	assert.Equal(t, otherChannel, req.GetChannelId())
+	assert.Equal(t, "djaul", req.GetServerId())
+	assert.Empty(t, fake.Requests())
+}
+
+func TestHandle_ServerWithoutChannelBindsWholeGuild(t *testing.T) {
+	f := newFixture(t)
+	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
+	s, _ := testutils.NewDiscordSession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
+		stringOption(contract.ConfigServerOptionName, "dja"))))
+
+	req := singleRequest(t, f).message.GetConfigurationSetServerRequest()
+	assert.Empty(t, req.GetChannelId())
+	assert.Equal(t, "djaul", req.GetServerId())
+}
+
+func TestHandle_ServerUnknownAnswersErrorWithoutRequest(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
+		stringOption(contract.ConfigServerOptionName, "nope"))))
+
+	assert.Empty(t, f.manager.calls)
+	assert.Contains(t, editContent(t, fake), "'*nope*'")
+}
+
+func TestHandle_ServerWithoutServerOptionIsReported(t *testing.T) {
+	f := newFixture(t)
+	s, _ := testutils.NewDiscordSession(t)
+
+	err := f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName, otherChannelOption()))
+
+	require.Error(t, err)
+	assert.Empty(t, f.manager.calls)
+}
+
+// ---- option extraction ----
+
+func TestGetOptions_WrongContextTypesAreErrors(t *testing.T) {
+	ctx := context.Background()
+	_, _, err := getServerOptions(ctx)
+	require.Error(t, err)
+	_, _, err = getServerOptions(context.WithValue(
+		context.WithValue(ctx, constants.ContextKeyServer, entities.Server{}), constants.ContextKeyChannel, 42))
+	require.Error(t, err, "a non-string channel is rejected")
+}
+
+// ---- answers ----
+
+func setServerAnswer(status amqp.RabbitMQMessage_Status, messageType amqp.RabbitMQMessage_Type,
+) *amqp.RabbitMQMessage {
+	return &amqp.RabbitMQMessage{Type: messageType, Status: status, Language: amqp.Language_EN}
+}
+
+func TestServerRespond_SuccessEditsWithAnswerLanguage(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+
+	require.NoError(t, f.cmd.serverRespond(context.Background(), s, configCommand("server"),
+		setServerAnswer(amqp.RabbitMQMessage_SUCCESS, amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_ANSWER), nil))
+
+	assertEditedWebhook(t, fake)
+	assert.Equal(t, testutils.Translations(t, discordgo.EnglishGB, "config.success")[0], editContent(t, fake),
+		"the answer language wins over the interaction locale")
+}
+
+func TestServerRespond_InvalidAnswerIsReported(t *testing.T) {
+	cases := map[string]*amqp.RabbitMQMessage{
+		"failed status": setServerAnswer(amqp.RabbitMQMessage_FAILED,
+			amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_ANSWER),
+		"wrong type": setServerAnswer(amqp.RabbitMQMessage_SUCCESS,
+			amqp.RabbitMQMessage_CONFIGURATION_SET_NOTIFICATION_ANSWER),
+	}
+	for name, message := range cases {
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t)
+			s, fake := testutils.NewDiscordSession(t)
+
+			err := f.cmd.serverRespond(context.Background(), s, configCommand("server"), message, nil)
+
+			require.ErrorIs(t, err, commands.ErrInvalidAnswerMessage)
+			assert.ErrorIs(t, err, commands.ErrUnavailable, "a backend that failed is worth a retry")
+			assert.Empty(t, fake.Requests())
+		})
+	}
+}
+
+func configGetAnswer(answer *amqp.ConfigurationGetAnswer) *amqp.RabbitMQMessage {
+	return &amqp.RabbitMQMessage{
+		Type:                   amqp.RabbitMQMessage_CONFIGURATION_GET_ANSWER,
+		Status:                 amqp.RabbitMQMessage_SUCCESS,
+		Language:               amqp.Language_FR,
+		ConfigurationGetAnswer: answer,
+	}
+}
+
+func TestGetRespond_BuildsEmbedFromGuildAndValidChannels(t *testing.T) {
+	f := newFixture(t)
+	f.servers.byID = map[string]entities.Server{"djaul": server("djaul", "Djaul", "")}
+	s, fake := testutils.NewDiscordSession(t)
+	fake.Respond(testutils.DiscordResponse{PathContains: "/guilds/" + guildID, Status: 200,
+		Body: `{"id":"` + guildID + `","name":"Les Kaellistes","icon":"abc"}`})
+	fake.Respond(testutils.DiscordResponse{PathContains: "/channels/ch-a", Status: 200,
+		Body: `{"id":"ch-a","guild_id":"` + guildID + `"}`})
+	fake.Respond(testutils.DiscordResponse{PathContains: "/channels/ch-gone", Status: 404, Body: `{"code":10003}`})
+
+	require.NoError(t, f.cmd.getRespond(context.Background(), s, configCommand("get"),
+		configGetAnswer(&amqp.ConfigurationGetAnswer{
+			GuildId:  guildID,
+			ServerId: "djaul",
+			ServerChannels: []*amqp.ConfigurationGetAnswer_ServerChannel{
+				{ChannelId: "ch-a", ServerId: "djaul"},
+				{ChannelId: "ch-gone", ServerId: "djaul"},
+				{ChannelId: "ch-a", ServerId: "djaul"},
+			},
+		}), nil))
+
+	assertEditedWebhook(t, fake)
+	payload := fake.LastEdit(t)
+	assert.Nil(t, payload.Content)
+	require.Len(t, payload.Embeds, 1)
+	embed := payload.Embeds[0]
+	assert.Equal(t, "Les Kaellistes", embed.Title)
+	assert.Equal(t, discordgo.EndpointGuildIcon(guildID, "abc")+"?size=128", embed.Thumbnail.URL)
+	assert.Contains(t, embed.Description, "**Djaul**")
+	require.Len(t, embed.Fields, 1)
+	assert.Equal(t, "<#ch-a> :djaul: **Djaul**\n<#ch-a> :djaul: **Djaul**\n", embed.Fields[0].Value,
+		"channels Discord cannot resolve are dropped")
+
+	channelFetches := 0
+	for _, req := range fake.Requests() {
+		if req.Path == "/api/v9/channels/ch-a" {
+			channelFetches++
+		}
+	}
+	assert.Equal(t, 1, channelFetches, "channels are fetched once and cached")
+}
+
+func TestGetRespond_EmptyConfiguration(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+	fake.Respond(testutils.DiscordResponse{PathContains: "/guilds/", Status: 200,
+		Body: `{"id":"` + guildID + `","name":"Nouvelle guilde"}`})
+
+	require.NoError(t, f.cmd.getRespond(context.Background(), s, configCommand("get"),
+		configGetAnswer(&amqp.ConfigurationGetAnswer{GuildId: guildID}), nil))
+
+	embed := fake.LastEdit(t).Embeds[0]
+	assert.Equal(t, "Nouvelle guilde", embed.Title)
+	assert.Empty(t, embed.Thumbnail.URL, "no icon means no thumbnail")
+	assert.True(t, strings.HasPrefix(embed.Description, "Aucun serveur"), embed.Description)
+	assert.Len(t, fake.Requests(), 2, "guild fetch then edit")
+}
+
+func TestGetRespond_GuildFetchFailureIsReportedAsUnavailable(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+	fake.Respond(testutils.DiscordResponse{PathContains: "/guilds/", Status: 403, Body: `{"code":50001}`})
+
+	err := f.cmd.getRespond(context.Background(), s, configCommand("get"),
+		configGetAnswer(&amqp.ConfigurationGetAnswer{GuildId: guildID}), nil)
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, commands.ErrUnavailable, "a guild Discord will not hand us is a dependency failure")
+	assert.Len(t, fake.Requests(), 1, "no edit is attempted")
+}
+
+func TestGetRespond_FailedStatusIsReported(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+	message := configGetAnswer(nil)
+	message.Status = amqp.RabbitMQMessage_FAILED
+
+	err := f.cmd.getRespond(context.Background(), s, configCommand("get"), message, nil)
+
+	require.ErrorIs(t, err, commands.ErrInvalidAnswerMessage)
+	assert.ErrorIs(t, err, commands.ErrUnavailable, "a backend that failed is worth a retry")
+	assert.Empty(t, fake.Requests())
+}
+
+func TestHandle_CallbacksWiredToMatchingResponders(t *testing.T) {
+	f := newFixture(t)
+	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
+	s, fake := guildSession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigGetSubCommandName)))
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
+		stringOption(contract.ConfigServerOptionName, "dja"))))
+	require.Len(t, f.manager.calls, 2)
+
+	// get callback only accepts successful answers
+	require.ErrorIs(t, f.manager.calls[0].callback(context.Background(), s, configCommand("get"),
+		setServerAnswer(amqp.RabbitMQMessage_FAILED, amqp.RabbitMQMessage_CONFIGURATION_GET_ANSWER), nil),
+		commands.ErrInvalidAnswerMessage)
+
+	// server callback only accepts server answers
+	require.ErrorIs(t, f.manager.calls[1].callback(context.Background(), s, configCommand("server"),
+		setServerAnswer(amqp.RabbitMQMessage_SUCCESS, amqp.RabbitMQMessage_CONFIGURATION_GET_ANSWER), nil),
+		commands.ErrInvalidAnswerMessage)
+	require.NoError(t, f.manager.calls[1].callback(context.Background(), s, configCommand("server"),
+		setServerAnswer(amqp.RabbitMQMessage_SUCCESS, amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_ANSWER), nil))
+	assert.Equal(t, testutils.Translations(t, discordgo.EnglishGB, "config.success")[0], editContent(t, fake))
+}
+
+// A thread has no configuration of its own: binding one binds the channel it
+// lives in, which is also where the binding is read back from.
+func TestHandle_ServerBoundToAThreadBindsItsParentChannel(t *testing.T) {
+	f := newFixture(t)
+	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
+	s, _ := testutils.NewDiscordSession(t)
+	addGuild(t, s, textChannel(currentChannel), textChannel(otherChannel),
+		&discordgo.Channel{ID: "thread-1", ParentID: otherChannel,
+			Type: discordgo.ChannelTypeGuildPublicThread})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
+		stringOption(contract.ConfigServerOptionName, "dja"),
+		&discordgo.ApplicationCommandInteractionDataOption{
+			Name: contract.ConfigChannelOptionName,
+			Type: discordgo.ApplicationCommandOptionChannel, Value: "thread-1",
+		})))
+
+	req := singleRequest(t, f).message.GetConfigurationSetServerRequest()
+	assert.Equal(t, otherChannel, req.GetChannelId(), "the thread's parent is bound")
+	assert.Equal(t, "djaul", req.GetServerId())
+}
+
+func TestHandle_ServerBoundToARegularChannelIsUnchanged(t *testing.T) {
+	f := newFixture(t)
+	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
+	s, _ := testutils.NewDiscordSession(t)
+	addGuild(t, s, textChannel(currentChannel), textChannel(otherChannel))
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
+		stringOption(contract.ConfigServerOptionName, "dja"), otherChannelOption())))
+
+	req := singleRequest(t, f).message.GetConfigurationSetServerRequest()
+	assert.Equal(t, otherChannel, req.GetChannelId())
+}

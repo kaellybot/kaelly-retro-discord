@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  release:
+    types:
+      - created
+      - published
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  prerequisites:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run Tests
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: coverage.txt
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13
+
+  docker_build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [prerequisites]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set Docker image tag
+        id: set-tag
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          else
+            echo "tag_name=${GITHUB_SHA}" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ env.tag_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-helm:
+    runs-on: ubuntu-latest
+    needs: [docker_build]
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+        - name: Checkout Code
+          uses: actions/checkout@v7
+
+        - name: Set up Kubernetes context
+          run: |
+            mkdir -p ${HOME}/.kube
+            echo "${{ secrets.KUBECONFIG }}" > ${HOME}/.kube/config
+  
+        - name: Install Helm
+          uses: azure/setup-helm@v5
+
+        - name: Set image tag
+          id: set-image-tag
+          run: |
+            if [[ $GITHUB_REF == refs/tags/* ]]; then
+              echo "image_tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            else
+              echo "image_tag_name=${GITHUB_SHA}" >> $GITHUB_ENV
+            fi
+
+        - name: Deploy Helm Chart
+          run: |
+            for i in $(seq 0 $(( ${{ secrets.RETRO_DISCORD_SHARD_COUNT }} - 1))); do
+              helm upgrade --install ${{ github.event.repository.name }}-$i charts/${{ github.event.repository.name }} \
+                --rollback-on-failure \
+                --force-replace \
+                --namespace kaellybot \
+                --create-namespace \
+                --set image.tag="${{ env.image_tag_name }}" \
+                --set secrets.DISCORD_TOKEN="${{ secrets.RETRO_DISCORD_TOKEN }}" \
+                --set-string secrets.DISCORD_SHARD_ID="$i" \
+                --set-string secrets.DISCORD_SHARD_COUNT="${{ secrets.RETRO_DISCORD_SHARD_COUNT }}" \
+                --set secrets.MYSQL_URL="${{ secrets.RETRO_MYSQL_URL }}" \
+                --set secrets.MYSQL_USER="${{ secrets.RETRO_MYSQL_USER }}" \
+                --set secrets.MYSQL_PASSWORD="${{ secrets.RETRO_MYSQL_PASSWORD }}" \
+                --set secrets.MYSQL_DATABASE="${{ secrets.RETRO_MYSQL_DATABASE }}" \
+                --set secrets.RABBITMQ_ADDRESS="${{ secrets.RETRO_RABBITMQ_ADDRESS }}" \
+                --set-string secrets.ABOUT_ID="${{ secrets.RETRO_ABOUT_ID }}" \
+                --set-string secrets.ALIGN_ID="${{ secrets.RETRO_ALIGN_ID }}" \
+                --set-string secrets.CONFIG_ID="${{ secrets.RETRO_CONFIG_ID }}" \
+                --set-string secrets.HELP_ID="${{ secrets.RETRO_HELP_ID }}" \
+                --set-string secrets.JOB_ID="${{ secrets.RETRO_JOB_ID }}" \
+                --set configMap.PROBE_PORT="${{ secrets.RETRO_PROBE_PORT }}" \
+                --set configMap.METRIC_PORT="${{ secrets.RETRO_METRIC_PORT }}" \
+                --set configMap.LOG_LEVEL="${{ secrets.RETRO_LOG_LEVEL }}" \
+                --set-string configMap.PRODUCTION="${{ secrets.RETRO_PRODUCTION }}"
+            done

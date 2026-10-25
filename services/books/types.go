@@ -1,0 +1,33 @@
+package books
+
+import (
+	"github.com/bwmarrin/discordgo"
+	"github.com/kaellybot/kaelly-retro-discord/models/entities"
+	"github.com/kaellybot/kaelly-retro-discord/repositories/cities"
+	"github.com/kaellybot/kaelly-retro-discord/repositories/jobs"
+	"github.com/kaellybot/kaelly-retro-discord/repositories/orders"
+)
+
+type Service interface {
+	GetJob(id string) (entities.Job, bool)
+	GetJobs() []entities.Job
+	FindJobs(name string, locale discordgo.Locale, limit int) []entities.Job
+	GetCity(id string) (entities.City, bool)
+	GetCities() []entities.City
+	FindCities(name string, locale discordgo.Locale, limit int) []entities.City
+	GetOrder(id string) (entities.Order, bool)
+	GetOrders() []entities.Order
+	FindOrders(name string, locale discordgo.Locale, limit int) []entities.Order
+}
+
+type Impl struct {
+	jobsMap         map[string]entities.Job
+	jobs            []entities.Job
+	citiesMap       map[string]entities.City
+	cities          []entities.City
+	ordersMap       map[string]entities.Order
+	orders          []entities.Order
+	jobRepository   jobs.Repository
+	cityRepository  cities.Repository
+	orderRepository orders.Repository
+}

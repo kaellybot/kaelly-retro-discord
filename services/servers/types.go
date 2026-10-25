@@ -1,0 +1,19 @@
+package servers
+
+import (
+	"github.com/bwmarrin/discordgo"
+	"github.com/kaellybot/kaelly-retro-discord/models/entities"
+	repository "github.com/kaellybot/kaelly-retro-discord/repositories/servers"
+)
+
+type Service interface {
+	GetServer(id string) (entities.Server, bool)
+	GetServers() []entities.Server
+	FindServers(name string, locale discordgo.Locale, limit int) []entities.Server
+}
+
+type Impl struct {
+	serversMap map[string]entities.Server
+	servers    []entities.Server
+	repository repository.Repository
+}

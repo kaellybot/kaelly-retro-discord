@@ -1,0 +1,92 @@
+package config
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/bwmarrin/discordgo"
+	amqp "github.com/kaellybot/kaelly-amqp"
+	"github.com/kaellybot/kaelly-retro-discord/commands"
+	"github.com/kaellybot/kaelly-retro-discord/models/constants"
+	"github.com/kaellybot/kaelly-retro-discord/models/mappers"
+	"github.com/kaellybot/kaelly-retro-discord/utils/discord"
+	"github.com/kaellybot/kaelly-retro-discord/utils/middlewares"
+	"github.com/rs/zerolog/log"
+)
+
+func (command *Command) getRequest(_ context.Context, s *discordgo.Session,
+	i *discordgo.InteractionCreate, _ middlewares.NextFunc) error {
+	authorID := discord.GetUserID(i.Interaction)
+	msg := mappers.MapConfigurationGetRequest(i.GuildID, authorID, i.Locale)
+	return command.requestManager.Request(s, i, constants.ConfigurationRequestRoutingKey,
+		msg, command.getRespond)
+}
+
+func (command *Command) getRespond(_ context.Context, s *discordgo.Session,
+	i *discordgo.InteractionCreate, message *amqp.RabbitMQMessage, _ map[string]any) error {
+	if message.Status != amqp.RabbitMQMessage_SUCCESS {
+		return fmt.Errorf("%w: %v", commands.ErrInvalidAnswerMessage, message.GetStatus())
+	}
+
+	guild, err := command.getGuildConfigData(s, message.ConfigurationGetAnswer)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+		Embeds: &[]*discordgo.MessageEmbed{
+			mappers.MapConfigToEmbed(guild, command.emojiService, command.serverService, message.Language),
+		},
+	})
+	if err != nil {
+		log.Warn().Err(err).Msgf("Cannot respond to interaction after receiving internal answer, ignoring request")
+	}
+
+	return nil
+}
+
+func (command *Command) getGuildConfigData(s *discordgo.Session,
+	answer *amqp.ConfigurationGetAnswer) (constants.GuildConfig, error) {
+	guild, err := s.Guild(answer.GuildId)
+	if err != nil {
+		return constants.GuildConfig{}, fmt.Errorf("%w: %w", commands.ErrUnavailable, err)
+	}
+
+	cache := make(map[string]*discordgo.Channel)
+	result := constants.GuildConfig{
+		Name:           guild.Name,
+		Icon:           guild.IconURL(defaultIconSize),
+		ServerID:       answer.ServerId,
+		ServerChannels: getValidServerChannels(s, answer, cache),
+	}
+
+	return result, nil
+}
+
+func getValidServerChannels(s *discordgo.Session, answer *amqp.ConfigurationGetAnswer,
+	cache map[string]*discordgo.Channel) []constants.ServerChannel {
+	result := make([]constants.ServerChannel, 0)
+	for _, serverChannel := range answer.ServerChannels {
+		channel, found := cache[serverChannel.ChannelId]
+		if !found {
+			discordChannel, errChan := s.Channel(serverChannel.ChannelId)
+			if errChan != nil {
+				log.Warn().Err(errChan).
+					Str(constants.LogGuildID, answer.GuildId).
+					Str(constants.LogChannelID, serverChannel.ChannelId).
+					Msgf("Cannot retrieve channel from Discord, ignoring this line...")
+				continue
+			}
+
+			cache[serverChannel.ChannelId] = discordChannel
+			channel = discordChannel
+		}
+
+		result = append(result, constants.ServerChannel{
+			Channel:  channel,
+			ServerID: serverChannel.ServerId,
+		})
+	}
+
+	return result
+}

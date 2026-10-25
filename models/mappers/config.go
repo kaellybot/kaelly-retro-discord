@@ -1,0 +1,103 @@
+package mappers
+
+import (
+	"github.com/bwmarrin/discordgo"
+	amqp "github.com/kaellybot/kaelly-amqp"
+	"github.com/kaellybot/kaelly-retro-discord/models/constants"
+	"github.com/kaellybot/kaelly-retro-discord/models/entities"
+	"github.com/kaellybot/kaelly-retro-discord/models/i18n"
+	"github.com/kaellybot/kaelly-retro-discord/services/emojis"
+	"github.com/kaellybot/kaelly-retro-discord/services/servers"
+	"github.com/kaellybot/kaelly-retro-discord/utils/discord"
+	"github.com/kaellybot/kaelly-retro-discord/utils/translators"
+	di18n "github.com/kaysoro/discordgo-i18n"
+	"github.com/rs/zerolog/log"
+)
+
+type i18nChannelServer struct {
+	Channel string
+	Server  i18nServer
+}
+
+type i18nServer struct {
+	Name  string
+	Emoji string
+}
+
+func MapConfigurationGetRequest(guildID, authorID string, lg discordgo.Locale) *amqp.RabbitMQMessage {
+	request := requestBackbone(authorID, amqp.RabbitMQMessage_CONFIGURATION_GET_REQUEST, lg)
+	request.ConfigurationGetRequest = &amqp.ConfigurationGetRequest{
+		GuildId: guildID,
+	}
+	return request
+}
+
+func MapConfigurationServerRequest(guildID, channelID, serverID, authorID string,
+	lg discordgo.Locale) *amqp.RabbitMQMessage {
+	request := requestBackbone(authorID, amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_REQUEST, lg)
+	request.ConfigurationSetServerRequest = &amqp.ConfigurationSetServerRequest{
+		GuildId:   guildID,
+		ChannelId: channelID,
+		ServerId:  serverID,
+	}
+	return request
+}
+
+func MapConfigToEmbed(guild constants.GuildConfig, emojiService emojis.Service,
+	serverService servers.Service, locale amqp.Language,
+) *discordgo.MessageEmbed {
+	lg := i18n.MapAMQPLocale(locale)
+
+	var guildServer *i18nServer
+	if len(guild.ServerID) > 0 {
+		server, found := serverService.GetServer(guild.ServerID)
+		if !found {
+			log.Warn().Str(constants.LogEntity, guild.ServerID).
+				Msgf("Cannot find server based on ID sent internally, continuing with empty server")
+			server = entities.Server{ID: guild.ServerID}
+		}
+
+		guildServer = &i18nServer{
+			Name:  translators.GetEntityLabel(server, lg),
+			Emoji: emojiService.GetEntityStringEmoji(server.ID, constants.EmojiTypeServer),
+		}
+	}
+
+	serverChannels := make([]i18nChannelServer, 0)
+	for _, serverChannel := range guild.ServerChannels {
+		server, found := serverService.GetServer(serverChannel.ServerID)
+		if !found {
+			log.Warn().Str(constants.LogEntity, serverChannel.ServerID).
+				Msgf("Cannot find server based on ID sent internally, continuing with empty server")
+			server = entities.Server{ID: serverChannel.ServerID}
+		}
+
+		serverChannels = append(serverChannels, i18nChannelServer{
+			Channel: serverChannel.Channel.Mention(),
+			Server: i18nServer{
+				Name:  translators.GetEntityLabel(server, lg),
+				Emoji: emojiService.GetEntityStringEmoji(server.ID, constants.EmojiTypeServer),
+			},
+		})
+	}
+
+	return &discordgo.MessageEmbed{
+		Title: guild.Name,
+		Description: di18n.Get(lg, "config.embed.description", di18n.Vars{
+			"server": guildServer,
+			"game":   constants.GetGame(),
+		}),
+		Thumbnail: &discordgo.MessageEmbedThumbnail{URL: guild.Icon},
+		Color:     constants.Color,
+		Fields: []*discordgo.MessageEmbedField{
+			{
+				Name: di18n.Get(lg, "config.embed.server.name", di18n.Vars{
+					"gameLogo": emojiService.GetMiscStringEmoji(constants.EmojiIDGame),
+				}),
+				Value:  di18n.Get(lg, "config.embed.server.value", di18n.Vars{"channels": serverChannels}),
+				Inline: false,
+			},
+		},
+		Footer: discord.BuildDefaultFooter(lg),
+	}
+}
