@@ -11,15 +11,19 @@ import (
 	"github.com/kaellybot/kaelly-retro-discord/models/constants"
 	"github.com/kaellybot/kaelly-retro-discord/repositories/cities"
 	emojiRepo "github.com/kaellybot/kaelly-retro-discord/repositories/emojis"
+	feedRepo "github.com/kaellybot/kaelly-retro-discord/repositories/feeds"
 	guildRepo "github.com/kaellybot/kaelly-retro-discord/repositories/guilds"
 	"github.com/kaellybot/kaelly-retro-discord/repositories/jobs"
 	"github.com/kaellybot/kaelly-retro-discord/repositories/orders"
 	serverRepo "github.com/kaellybot/kaelly-retro-discord/repositories/servers"
+	twitterRepo "github.com/kaellybot/kaelly-retro-discord/repositories/twitters"
 	"github.com/kaellybot/kaelly-retro-discord/services/books"
 	"github.com/kaellybot/kaelly-retro-discord/services/discord"
 	"github.com/kaellybot/kaelly-retro-discord/services/emojis"
+	"github.com/kaellybot/kaelly-retro-discord/services/feeds"
 	"github.com/kaellybot/kaelly-retro-discord/services/guilds"
 	"github.com/kaellybot/kaelly-retro-discord/services/servers"
+	"github.com/kaellybot/kaelly-retro-discord/services/twitters"
 	"github.com/kaellybot/kaelly-retro-discord/utils/databases"
 	"github.com/kaellybot/kaelly-retro-discord/utils/insights"
 	"github.com/kaellybot/kaelly-retro-discord/utils/requests"
@@ -55,10 +59,12 @@ func New() (*Impl, error) {
 	// Repositories
 	cityRepo := cities.New(db)
 	emojiRepo := emojiRepo.New(db)
+	feedRepo := feedRepo.New(db)
 	guildRepo := guildRepo.New(db)
 	jobRepo := jobs.New(db)
 	orderRepo := orders.New(db)
 	serverRepo := serverRepo.New(db)
+	twitterRepo := twitterRepo.New(db)
 
 	// Services
 	serverService, errServ := servers.New(serverRepo)
@@ -69,6 +75,16 @@ func New() (*Impl, error) {
 	bookService, errBook := books.New(jobRepo, cityRepo, orderRepo)
 	if errBook != nil {
 		return nil, errBook
+	}
+
+	feedService, errFeed := feeds.New(feedRepo)
+	if errFeed != nil {
+		return nil, errFeed
+	}
+
+	twitterService, errTwitter := twitters.New(twitterRepo)
+	if errTwitter != nil {
+		return nil, errTwitter
 	}
 
 	emojiService, errEmoji := emojis.New(emojiRepo)
@@ -83,7 +99,8 @@ func New() (*Impl, error) {
 	commands = append(commands,
 		about.New(broker, emojiService),
 		align.New(bookService, guildService, serverService, emojiService, requestsManager),
-		config.New(emojiService, guildService, serverService, requestsManager),
+		config.New(emojiService, feedService, guildService,
+			serverService, twitterService, requestsManager),
 		help.New(broker, &commands, emojiService),
 		job.New(bookService, guildService, serverService, emojiService, requestsManager),
 	)

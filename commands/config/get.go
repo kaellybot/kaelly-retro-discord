@@ -35,7 +35,8 @@ func (command *Command) getRespond(_ context.Context, s *discordgo.Session,
 
 	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{
-			mappers.MapConfigToEmbed(guild, command.emojiService, command.serverService, message.Language),
+			mappers.MapConfigToEmbed(guild, command.emojiService, command.serverService,
+				command.feedService, command.twitterService, message.Language),
 		},
 	})
 	if err != nil {
@@ -54,10 +55,11 @@ func (command *Command) getGuildConfigData(s *discordgo.Session,
 
 	cache := make(map[string]*discordgo.Channel)
 	result := constants.GuildConfig{
-		Name:           guild.Name,
-		Icon:           guild.IconURL(defaultIconSize),
-		ServerID:       answer.ServerId,
-		ServerChannels: getValidServerChannels(s, answer, cache),
+		Name:             guild.Name,
+		Icon:             guild.IconURL(defaultIconSize),
+		ServerID:         answer.ServerId,
+		ServerChannels:   getValidServerChannels(s, answer, cache),
+		NotifiedChannels: getValidNotifiedChannels(s, answer, cache),
 	}
 
 	return result, nil
@@ -89,4 +91,44 @@ func getValidServerChannels(s *discordgo.Session, answer *amqp.ConfigurationGetA
 	}
 
 	return result
+}
+
+func getValidNotifiedChannels(s *discordgo.Session, answer *amqp.ConfigurationGetAnswer,
+	cache map[string]*discordgo.Channel) []constants.NotifiedChannel {
+	result := make([]constants.NotifiedChannel, 0)
+	for _, notifiedChan := range answer.NotifiedChannels {
+		channel, found := cache[notifiedChan.ChannelId]
+		if !found {
+			discordChannel, errChan := s.Channel(notifiedChan.ChannelId)
+			if errChan != nil {
+				log.Warn().Err(errChan).
+					Str(constants.LogGuildID, answer.GuildId).
+					Str(constants.LogChannelID, notifiedChan.ChannelId).
+					Msgf("Cannot retrieve channel from Discord, ignoring this line...")
+				continue
+			}
+
+			cache[notifiedChan.ChannelId] = discordChannel
+			channel = discordChannel
+		}
+
+		if webhookExists(s, notifiedChan.WebhookId, notifiedChan.ChannelId, answer.GuildId) {
+			result = append(result, constants.NotifiedChannel{
+				Channel:          channel,
+				Label:            notifiedChan.Label,
+				NotificationType: notifiedChan.NotificationType,
+			})
+		}
+	}
+
+	return result
+}
+
+func webhookExists(s *discordgo.Session, webhookID, channelID, guildID string) bool {
+	webhook, err := s.Webhook(webhookID)
+	if err != nil {
+		return false
+	}
+
+	return webhook.ChannelID == channelID && webhook.GuildID == guildID
 }

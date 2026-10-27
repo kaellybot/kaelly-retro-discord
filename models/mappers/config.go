@@ -7,7 +7,9 @@ import (
 	"github.com/kaellybot/kaelly-retro-discord/models/entities"
 	"github.com/kaellybot/kaelly-retro-discord/models/i18n"
 	"github.com/kaellybot/kaelly-retro-discord/services/emojis"
+	"github.com/kaellybot/kaelly-retro-discord/services/feeds"
 	"github.com/kaellybot/kaelly-retro-discord/services/servers"
+	"github.com/kaellybot/kaelly-retro-discord/services/twitters"
 	"github.com/kaellybot/kaelly-retro-discord/utils/discord"
 	"github.com/kaellybot/kaelly-retro-discord/utils/translators"
 	di18n "github.com/kaysoro/discordgo-i18n"
@@ -20,6 +22,16 @@ type i18nChannelServer struct {
 }
 
 type i18nServer struct {
+	Name  string
+	Emoji string
+}
+
+type i18nChannelWebhook struct {
+	Channel  string
+	Provider i18nProvider
+}
+
+type i18nProvider struct {
 	Name  string
 	Emoji string
 }
@@ -43,8 +55,24 @@ func MapConfigurationServerRequest(guildID, channelID, serverID, authorID string
 	return request
 }
 
+func MapConfigurationNotificationRequest(guildID, channelID, webhookID, authorID, labelID string,
+	notificationType amqp.NotificationType, enabled bool, lg discordgo.Locale,
+) *amqp.RabbitMQMessage {
+	request := requestBackbone(authorID, amqp.RabbitMQMessage_CONFIGURATION_SET_NOTIFICATION_REQUEST, lg)
+	request.ConfigurationSetNotificationRequest = &amqp.ConfigurationSetNotificationRequest{
+		GuildId:          guildID,
+		ChannelId:        channelID,
+		WebhookId:        webhookID,
+		Label:            labelID,
+		NotificationType: notificationType,
+		Enabled:          enabled,
+	}
+	return request
+}
+
 func MapConfigToEmbed(guild constants.GuildConfig, emojiService emojis.Service,
-	serverService servers.Service, locale amqp.Language,
+	serverService servers.Service, feedService feeds.Service,
+	twitterService twitters.Service, locale amqp.Language,
 ) *discordgo.MessageEmbed {
 	lg := i18n.MapAMQPLocale(locale)
 
@@ -81,6 +109,9 @@ func MapConfigToEmbed(guild constants.GuildConfig, emojiService emojis.Service,
 		})
 	}
 
+	notifiedChannels := mapNotifiedChannelsToI18n(guild.NotifiedChannels,
+		emojiService, feedService, twitterService, lg)
+
 	return &discordgo.MessageEmbed{
 		Title: guild.Name,
 		Description: di18n.Get(lg, "config.embed.description", di18n.Vars{
@@ -97,7 +128,59 @@ func MapConfigToEmbed(guild constants.GuildConfig, emojiService emojis.Service,
 				Value:  di18n.Get(lg, "config.embed.server.value", di18n.Vars{"channels": serverChannels}),
 				Inline: false,
 			},
+			{
+				Name:   di18n.Get(lg, "config.embed.webhook.name"),
+				Value:  di18n.Get(lg, "config.embed.webhook.value", di18n.Vars{"channels": notifiedChannels}),
+				Inline: false,
+			},
 		},
 		Footer: discord.BuildDefaultFooter(lg),
 	}
+}
+
+func mapNotifiedChannelsToI18n(webhooks []constants.NotifiedChannel, emojiService emojis.Service,
+	feedService feeds.Service, twitterService twitters.Service, lg discordgo.Locale) []i18nChannelWebhook {
+	i18nWebhooks := make([]i18nChannelWebhook, 0)
+	for _, webhook := range webhooks {
+		var provider i18nProvider
+		switch webhook.NotificationType {
+		case amqp.NotificationType_RSS:
+			feedType := feedService.GetFeedType(webhook.Label)
+			if feedType == nil {
+				log.Warn().Str(constants.LogEntity, webhook.Label).
+					Msgf("Cannot find feed type based on ID sent internally, ignoring this webhook")
+				continue
+			}
+
+			provider = i18nProvider{
+				Name:  translators.GetEntityLabel(feedType, lg),
+				Emoji: emojiService.GetMiscStringEmoji(constants.EmojiIDRSS),
+			}
+
+		case amqp.NotificationType_TWITTER:
+			twitterAccount := twitterService.GetTwitterAccount(webhook.Label)
+			if twitterAccount == nil {
+				log.Warn().Str(constants.LogEntity, webhook.Label).
+					Msgf("Cannot find twitter account based on ID sent internally, ignoring this webhook")
+				continue
+			}
+
+			provider = i18nProvider{
+				Name:  translators.GetEntityLabel(twitterAccount, lg),
+				Emoji: emojiService.GetMiscStringEmoji(constants.EmojiIDTwitter),
+			}
+
+		// DOFUS Retro has no almanax.
+		case amqp.NotificationType_ALMANAX, amqp.NotificationType_UNKNOWN:
+			fallthrough
+		default:
+			continue
+		}
+
+		i18nWebhooks = append(i18nWebhooks, i18nChannelWebhook{
+			Channel:  webhook.Channel.Mention(),
+			Provider: provider,
+		})
+	}
+	return i18nWebhooks
 }

@@ -1,11 +1,11 @@
 {
-    "welcome": "Hallo und vielen Dank für die Einladung! :tada:\n\nIch bin **{{ .name }}**, dein neuer Discord-Assistent für das Spiel **{{ .game.Name }}** {{ .gameLogo }}!\nMein Ziel? Dir praktische und unterhaltsame Tools anzubieten, um dein Spielerlebnis aufzupeppen. :fire:\nHier sind einige meiner Superkräfte:\n* :sparkles: Das Verzeichnis von Handwerkern und ausgerichteten Mitgliedern deiner Gilde verwalten\n\nNeugierig, was ich alles kann? Gib {{ .help }} ein und entdecke alle meine Befehle! :smirk:\n\n<@{{ .owner }}>, als Administrator von **{{ .guild }}** kannst du auf erweiterte Funktionen zugreifen, um meine Dienste zu konfigurieren.\nMit `/{{ .config }}` kannst du folgendes einrichten:\n* :globe_with_meridians: Den Hauptspielserver deiner Gilde\n\nKlingt episch, oder? Ich freue mich darauf, mit dir zusammenzuarbeiten, um diesen Server noch unterhaltsamer und nützlicher zu machen! :smile:",
+    "welcome": "Hallo und vielen Dank für die Einladung! :tada:\n\nIch bin **{{ .name }}**, dein neuer Discord-Assistent für das Spiel **{{ .game.Name }}** {{ .gameLogo }}!\nMein Ziel? Dir praktische und unterhaltsame Tools anzubieten, um dein Spielerlebnis aufzupeppen. :fire:\nHier sind einige meiner Superkräfte:\n* :sparkles: Das Verzeichnis von Handwerkern und ausgerichteten Mitgliedern deiner Gilde verwalten\n\nNeugierig, was ich alles kann? Gib {{ .help }} ein und entdecke alle meine Befehle! :smirk:\n\n<@{{ .owner }}>, als Administrator von **{{ .guild }}** kannst du auf erweiterte Funktionen zugreifen, um meine Dienste zu konfigurieren.\nMit `/{{ .config }}` kannst du folgendes einrichten:\n* :globe_with_meridians: Den Hauptspielserver deiner Gilde\n* :bell: Benachrichtigungen für Tweets, RSS-Feeds des Spiels\n\nKlingt episch, oder? Ich freue mich darauf, mit dir zusammenzuarbeiten, um diesen Server noch unterhaltsamer und nützlicher zu machen! :smile:",
     "about": {
         "help": {
             "overview": "bietet Informationen über mich und eine Möglichkeit, Hilfe zu erhalten",
             "detailed": "bietet detaillierte Informationen über mich (Einladungslink, Quellcode, Umgang mit privaten Daten...) und eine Möglichkeit, bei Bedarf Hilfe zu erhalten (Support-Discord, Twitter)",
             "source": "",
-            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/about_DE.webp"
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/about_DE.webp"
         },
         "title": "{{ .name }} Version {{ .version }}",
         "desc": "Discord-Bot, der dem Spiel **{{ .game.Name }}** {{ .gameLogo }} gewidmet ist!",
@@ -40,12 +40,12 @@
             "overview": "verwaltet das Buch der Ausgerichteten",
             "detailed": {
                 "get": "zeigt das Buch der ausgerichteten Spieler auf deinem Discord-Server an\n   - Das Feld `city` ist optional und entspricht der Stadt, der die Spieler ihre Treue geschworen haben. Wenn nicht angegeben, wird das Verzeichnis ohne Berücksichtigung dieses Filters angezeigt. *__Beispiel__:Bonta*\n - Das Feld `order` ist optional und entspricht der Ordnung, der die Spieler beigetreten sind. Wenn nicht angegeben, wird das Verzeichnis ohne Berücksichtigung dieses Filters angezeigt. *__Beispiel__:Geist*\n - Das Feld `server` ist optional und entspricht dem gewünschten Spielserver. Wenn nicht angegeben, wird der für die Discord-Gilde definierte Spielserver verwendet (siehe `config`). *__Beispiel__:Boune*",
-                "set": "trägt deine Ausrichtung ins Buch ein, unabhängig vom Discord-Server; dieser Eintrag kann nicht für andere vorgenommen werden.\n   - Das Feld `city` ist erforderlich und entspricht der Stadt, der die Spieler ihre Treue geschworen haben. *__Beispiel__:Bonta*\n - Das Feld `order` ist erforderlich und entspricht der Ordnung, der die Spieler beigetreten sind. *__Beispiel__:Geist*\n - Das Feld `level` ist erforderlich und entspricht dem Ausrichtungslevel zwischen 0 und 100, wobei 0 die Entfernung aus dem Verzeichnis bedeutet. *__Beispiel__:100*\n - Das Feld `server` ist optional und entspricht dem gewünschten Spielserver. Wenn nicht angegeben, wird der für die Discord-Gilde definierte Spielserver verwendet (siehe `config`). *__Beispiel__:Boune*"
+                "set": "trägt deine Ausrichtung ins Buch ein, unabhängig vom Discord-Server; dieser Eintrag kann nicht für andere vorgenommen werden.\n   - Das Feld `city` ist erforderlich und entspricht der Stadt, der die Spieler ihre Treue geschworen haben. *__Beispiel__:Bonta*\n - Das Feld `order` ist erforderlich und entspricht der Ordnung, der die Spieler beigetreten sind. *__Beispiel__:Geist*\n - Das Feld `level` ist erforderlich und entspricht dem Ausrichtungslevel zwischen 0 und 60, wobei 0 die Entfernung aus dem Verzeichnis bedeutet. *__Beispiel__:60*\n - Das Feld `server` ist optional und entspricht dem gewünschten Spielserver. Wenn nicht angegeben, wird der für die Discord-Gilde definierte Spielserver verwendet (siehe `config`). *__Beispiel__:Boune*"
             },
             "source": "Die gesammelten Daten werden nur für meine ordnungsgemäße Funktion verwendet.",
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_get_DE.webp",
-                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_set_DE.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/align_get_DE.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/align_set_DE.webp"
             }
         },
         "success": "Das Buch der Ausgerichteten wurde aktualisiert!",
@@ -68,14 +68,18 @@
     },
     "config": {
         "help": {
-            "overview": "ermöglicht die Konfiguration des Spielservers der Gilde oder eines Kanals",
+            "overview": "ermöglicht die Konfiguration des Spielservers, des automatischen Versands von RSS-Feeds oder Tweets",
             "detailed": {
                 "get": "zeigt meine aktuelle Konfiguration für diesen Discord-Server an",
-                "server": "verknüpft den Discord-Server mit einem Spielserver\n  - Das Feld `server` ist erforderlich und entspricht einem Spielserver. Nach der Angabe wird er der Standardwert für bestimmte Befehle wie `align` oder `job`. *__Beispiel__:Boune*\n  - Das Feld `channel` ist optional und dient dazu, einen Spielserver mit einem bestimmten Kanal zu verknüpfen. Diese Verknüpfung hat Vorrang vor der Verknüpfung mit dem Discord-Server. *__Beispiel__:#allgemein*"
+                "rss": "aktiviert/deaktiviert den automatischen Versand von [RSS-Feeds](https://de.wikipedia.org/wiki/RSS)\n  - Das Feld `feed` ist erforderlich und entspricht einem RSS-Feed-Typ. *__Beispiel__:Devblog*\n  - Das Feld `enabled` ist erforderlich und gibt an, ob diese Funktion aktiviert oder deaktiviert wird. *__Beispiel__:Wahr*\n  - Das Feld `channel` ist optional und gibt den Kanal an, in dem die Nachrichten gepostet werden. Wenn nicht angegeben, wird der aktuelle Kanal verwendet. *__Beispiel__:#allgemein*\n  - Die verwendete Sprache ist die des Benutzers. Wenn diese nicht unterstützt wird, wird die Standardsprache *{{ .defaultLocale }}* verwendet.",
+                "server": "verknüpft den Discord-Server mit einem Spielserver\n  - Das Feld `server` ist erforderlich und entspricht einem Spielserver. Nach der Angabe wird er der Standardwert für bestimmte Befehle wie `align` oder `job`. *__Beispiel__:Boune*\n  - Das Feld `channel` ist optional und dient dazu, einen Spielserver mit einem bestimmten Kanal zu verknüpfen. Diese Verknüpfung hat Vorrang vor der Verknüpfung mit dem Discord-Server. *__Beispiel__:#allgemein*",
+                "twitter": "aktiviert/deaktiviert den automatischen Versand von Tweets vom offiziellen Twitter-Konto des Spiels\n  - Das Feld `twitter` ist erforderlich und entspricht einem Twitter-Kontonamen. *__Beispiel__:DofusRETRO_EN*\n  - Das Feld `enabled` ist erforderlich und gibt an, ob diese Funktion aktiviert oder deaktiviert wird. *__Beispiel__:Wahr*\n  - Das Feld `channel` ist optional und gibt den Kanal an, in dem die Nachrichten gepostet werden. Wenn nicht angegeben, wird der aktuelle Kanal verwendet. *__Beispiel__:#allgemein*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_get_DE.webp",
-                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_server_DE.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_get_DE.webp",
+                "rss": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_rss_DE.webp",
+                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_server_DE.webp",
+                "twitter": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_twitter_DE.webp"
             },
             "source": "Die gesammelten Daten werden nur für meine ordnungsgemäße Funktion verwendet."
         },
@@ -85,6 +89,10 @@
             "server": {
                 "name": "{{ .gameLogo }} Kanäle mit Servern verknüpft",
                 "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Server.Emoji }} **{{ .Server.Name }}**\n{{ end }}{{ else }}Keine konfigurierten Kanäle!{{ end }}"
+            },
+            "webhook": {
+                "name": ":bell: Benachrichtigte Kanäle",
+                "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Provider.Emoji }} **{{ .Provider.Name }}**\n{{ end }}{{ else }}Keine konfigurierten Kanäle!{{ end }}"
             }
         }
     },
@@ -98,7 +106,7 @@
                 "Nun... unter uns, du wirst dich doch nicht so weit herablassen, oder? :rolling_eyes:",
                 "Es hilft. :nerd:"
             ],
-            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/help.webp",
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/help.webp",
             "source": ""
         },
         "command": {
@@ -127,8 +135,8 @@
                 "set": "trägt deinen Beruf ins Verzeichnis ein, unabhängig vom Discord-Server; dieser Eintrag kann nicht für andere vorgenommen werden.\n    - Das Feld `job` ist erforderlich und entspricht einem Beruf im Spiel. *__Beispiel__: Holzfäller*\n - Das Feld `level` ist erforderlich und entspricht dem Berufslevel zwischen 0 und 100, wobei 0 die Entfernung aus dem Verzeichnis bedeutet. *__Beispiel__: 100*\n - Das Feld `server` ist optional und entspricht dem gewünschten Spielserver. Wenn nicht angegeben, wird der für die Discord-Gilde definierte Spielserver verwendet (siehe `config`). *__Beispiel__: Boune*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_get_DE.webp",
-                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_set_DE.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/job_get_DE.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/job_set_DE.webp"
             },
             "source": "Die gesammelten Daten werden nur für meine ordnungsgemäße Funktion verwendet."
         },
@@ -162,6 +170,10 @@
             "not_found": "Oh je! '*{{ .value }}*' entspricht keiner Stadt, die ich kenne! :pensive:",
             "too_many": "Hoppla! '*{{ .value }}*' passt zu mehreren Städten ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
         },
+        "feed": {
+            "not_found": "Aie! '*{{ .value }}*' entspricht keinem RSS-Feed, den ich kenne. :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' entspricht zu vielen RSS-Feeds ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
         "job": {
             "not_found": "Aie! '*{{ .value }}*' entspricht keinem Beruf, den ich kenne. :pensive:",
             "too_many": "Outch! '*{{ .value }}*' entspricht zu vielen Berufen ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
@@ -180,11 +192,20 @@
             "required": "Oops! Es scheint, dass kein {{ .game.Name }}-Server mit deiner Gilde (oder deinem Kanal) verknüpft ist. Nutze die Server-Option wie `/job get job: Alchemist server: Boune`, oder verknüpfe deine Gilde mit einem Server über den Befehl `/config server`. :grin:",
             "not_found": "Aie! '*{{ .value }}*' entspricht keinem Server, den ich kenne. :pensive:",
             "too_many": "Outch! '*{{ .value }}*' entspricht zu vielen Servern ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! Versuche es erneut, indem du einen existierenden aus der Liste auswählst. :slight_smile:"
+        },
+        "twitterAccount": {
+            "not_found": "Aie! '*{{ .value }}*' entspricht keinem Twitter-Konto, das ich kenne. :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' entspricht zu vielen Twitter-Konten ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "webhook": {
+            "permission": "Ich habe keine Berechtigung, Webhooks zu verwalten! Es tut mir leid, ich kann ohne diese Berechtigung nichts weiter tun :(",
+            "targetChannelType": "Sorry! Ich kann Benachrichtigungen nur in normalen Textkanälen des Servers einrichten :("
         }
     },
     "errors": {
         "unavailable": "Mein Gehirn antwortet gerade nicht :sweat: Gib mir eine Minute und versuch es nochmal!",
-        "unknown_interaction": "Hmm, diese Interaktion kenne ich nicht... Vielleicht stammt sie aus einer veralteten Nachricht, starte den Befehl erneut! :sweat_smile:"
+        "unknown_interaction": "Hmm, diese Interaktion kenne ich nicht... Vielleicht stammt sie aus einer veralteten Nachricht, starte den Befehl erneut! :sweat_smile:",
+        "too_many_webhooks": "Die maximale Anzahl an Webhooks wurde für diesen Kanal erreicht, ich kann nicht fortfahren...\n*(Klicke auf das Kanal-Icon :gear:, dann `Integrationen` und schließlich `Webhooks`, um sie zu verwalten)*"
     },
     "panic": [
         "Ich habe einen Fehler festgestellt :frowning:... Dies wird so schnell wie möglich behoben!",

@@ -51,6 +51,15 @@ func GetOrdersLabels(orders []entities.Order, locale discordgo.Locale) []string 
 	return labels
 }
 
+func GetFeedTypesLabels(feedTypes []entities.FeedType, locale discordgo.Locale) []string {
+	labels := make([]string, 0)
+	for _, feedType := range feedTypes {
+		labels = append(labels, GetEntityLabel(feedType, locale))
+	}
+
+	return labels
+}
+
 func GetJobsLabels(jobs []entities.Job, locale discordgo.Locale) []string {
 	labels := make([]string, 0)
 	for _, job := range jobs {
@@ -64,6 +73,15 @@ func GetServersLabels(servers []entities.Server, locale discordgo.Locale) []stri
 	labels := make([]string, 0)
 	for _, server := range servers {
 		labels = append(labels, GetEntityLabel(server, locale))
+	}
+
+	return labels
+}
+
+func GetTwittersLabels(twitterAccounts []entities.TwitterAccount, locale discordgo.Locale) []string {
+	labels := make([]string, 0)
+	for _, twitterAccount := range twitterAccounts {
+		labels = append(labels, GetEntityLabel(twitterAccount, locale))
 	}
 
 	return labels

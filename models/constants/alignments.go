@@ -4,7 +4,7 @@ type CityType string
 
 const (
 	AlignmentMinLevel = 0
-	AlignmentMaxLevel = 100
+	AlignmentMaxLevel = 60
 
 	CityTypeDark  CityType = "dark"
 	CityTypeLight CityType = "light"

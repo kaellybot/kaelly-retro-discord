@@ -199,15 +199,15 @@ func TestCheckOptionalCityAndOrder_AmbiguousOrUnknownAnswersError(t *testing.T) 
 }
 
 func TestCheckLevel(t *testing.T) {
-	for _, value := range []int64{0, 100} {
+	for _, value := range []int64{0, 60} {
 		result := runCheck(t, newDeps(), level, slash("set", levelOption(value)))
 		require.True(t, result.called)
 		assert.Equal(t, value, result.ctx.Value(constants.ContextKeyLevel))
 	}
-	for _, value := range []int64{-1, 101} {
+	for _, value := range []int64{-1, 61} {
 		result := runCheck(t, newDeps(), level, slash("set", levelOption(value)))
 		assert.False(t, result.called)
-		assert.Equal(t, "Le niveau doit être compris entre 0 et 100 ! :grin:", result.content(t))
+		assert.Equal(t, "Le niveau doit être compris entre 0 et 60 ! :grin:", result.content(t))
 	}
 }
 

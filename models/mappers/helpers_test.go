@@ -10,7 +10,9 @@ import (
 	"github.com/kaellybot/kaelly-retro-discord/models/entities"
 	"github.com/kaellybot/kaelly-retro-discord/services/books"
 	"github.com/kaellybot/kaelly-retro-discord/services/emojis"
+	"github.com/kaellybot/kaelly-retro-discord/services/feeds"
 	"github.com/kaellybot/kaelly-retro-discord/services/servers"
+	"github.com/kaellybot/kaelly-retro-discord/services/twitters"
 	"github.com/kaellybot/kaelly-retro-discord/utils/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -174,4 +176,32 @@ func assertInOrder(t *testing.T, text string, fragments ...string) {
 		assert.Greater(t, index, last, "%q is out of order in %q", fragment, text)
 		last = index
 	}
+}
+
+type fakeFeeds struct {
+	feeds.Service
+	feedTypes []entities.FeedType
+}
+
+func (f fakeFeeds) GetFeedType(id string) *entities.FeedType {
+	for i := range f.feedTypes {
+		if f.feedTypes[i].ID == id {
+			return &f.feedTypes[i]
+		}
+	}
+	return nil
+}
+
+type fakeTwitters struct {
+	twitters.Service
+	accounts []entities.TwitterAccount
+}
+
+func (f fakeTwitters) GetTwitterAccount(id string) *entities.TwitterAccount {
+	for i := range f.accounts {
+		if f.accounts[i].ID == id {
+			return &f.accounts[i]
+		}
+	}
+	return nil
 }

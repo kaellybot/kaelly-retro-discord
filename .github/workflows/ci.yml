@@ -119,18 +119,18 @@ jobs:
                 --set secrets.DISCORD_TOKEN="${{ secrets.RETRO_DISCORD_TOKEN }}" \
                 --set-string secrets.DISCORD_SHARD_ID="$i" \
                 --set-string secrets.DISCORD_SHARD_COUNT="${{ secrets.RETRO_DISCORD_SHARD_COUNT }}" \
-                --set secrets.MYSQL_URL="${{ secrets.RETRO_MYSQL_URL }}" \
-                --set secrets.MYSQL_USER="${{ secrets.RETRO_MYSQL_USER }}" \
-                --set secrets.MYSQL_PASSWORD="${{ secrets.RETRO_MYSQL_PASSWORD }}" \
-                --set secrets.MYSQL_DATABASE="${{ secrets.RETRO_MYSQL_DATABASE }}" \
-                --set secrets.RABBITMQ_ADDRESS="${{ secrets.RETRO_RABBITMQ_ADDRESS }}" \
+                --set secrets.MYSQL_URL="${{ secrets.MYSQL_URL }}" \
+                --set secrets.MYSQL_USER="${{ secrets.MYSQL_USER }}" \
+                --set secrets.MYSQL_PASSWORD="${{ secrets.MYSQL_PASSWORD }}" \
+                --set secrets.MYSQL_DATABASE="${{ secrets.MYSQL_DATABASE }}" \
+                --set secrets.RABBITMQ_ADDRESS="${{ secrets.RABBITMQ_ADDRESS }}" \
                 --set-string secrets.ABOUT_ID="${{ secrets.RETRO_ABOUT_ID }}" \
                 --set-string secrets.ALIGN_ID="${{ secrets.RETRO_ALIGN_ID }}" \
                 --set-string secrets.CONFIG_ID="${{ secrets.RETRO_CONFIG_ID }}" \
                 --set-string secrets.HELP_ID="${{ secrets.RETRO_HELP_ID }}" \
                 --set-string secrets.JOB_ID="${{ secrets.RETRO_JOB_ID }}" \
-                --set configMap.PROBE_PORT="${{ secrets.RETRO_PROBE_PORT }}" \
-                --set configMap.METRIC_PORT="${{ secrets.RETRO_METRIC_PORT }}" \
-                --set configMap.LOG_LEVEL="${{ secrets.RETRO_LOG_LEVEL }}" \
-                --set-string configMap.PRODUCTION="${{ secrets.RETRO_PRODUCTION }}"
+                --set configMap.PROBE_PORT="${{ secrets.PROBE_PORT }}" \
+                --set configMap.METRIC_PORT="${{ secrets.METRIC_PORT }}" \
+                --set configMap.LOG_LEVEL="${{ secrets.LOG_LEVEL }}" \
+                --set-string configMap.PRODUCTION="${{ secrets.PRODUCTION }}"
             done

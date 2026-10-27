@@ -8,6 +8,7 @@ const (
 	EmojiIDLast     EmojiMiscID = "last"
 	EmojiIDNext     EmojiMiscID = "next"
 	EmojiIDPrevious EmojiMiscID = "previous"
+	EmojiIDRSS      EmojiMiscID = "rss"
 	EmojiIDScroll   EmojiMiscID = "scroll"
 	EmojiIDTwitter  EmojiMiscID = "twitter"
 

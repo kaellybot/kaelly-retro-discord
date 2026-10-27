@@ -9,24 +9,32 @@ import (
 	"github.com/kaellybot/kaelly-retro-discord/commands"
 	"github.com/kaellybot/kaelly-retro-discord/models/constants"
 	"github.com/kaellybot/kaelly-retro-discord/models/entities"
+	"github.com/kaellybot/kaelly-retro-discord/models/i18n"
 	"github.com/kaellybot/kaelly-retro-discord/services/emojis"
+	"github.com/kaellybot/kaelly-retro-discord/services/feeds"
 	"github.com/kaellybot/kaelly-retro-discord/services/guilds"
 	"github.com/kaellybot/kaelly-retro-discord/services/servers"
+	"github.com/kaellybot/kaelly-retro-discord/services/twitters"
 	"github.com/kaellybot/kaelly-retro-discord/utils/checks"
+	"github.com/kaellybot/kaelly-retro-discord/utils/discord"
 	"github.com/kaellybot/kaelly-retro-discord/utils/middlewares"
 	"github.com/kaellybot/kaelly-retro-discord/utils/requests"
 	di18n "github.com/kaysoro/discordgo-i18n"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
 //nolint:exhaustive // only the useful interaction types are handled.
-func New(emojiService emojis.Service, guildService guilds.Service, serverService servers.Service,
+func New(emojiService emojis.Service, feedService feeds.Service,
+	guildService guilds.Service, serverService servers.Service, twitterService twitters.Service,
 	requestManager requests.RequestManager) *Command {
 	cmd := Command{
 		DiscordID:      viper.GetString(constants.ConfigID),
 		emojiService:   emojiService,
+		feedService:    feedService,
 		guildService:   guildService,
 		serverService:  serverService,
+		twitterService: twitterService,
 		requestManager: requestManager,
 	}
 
@@ -35,8 +43,14 @@ func New(emojiService emojis.Service, guildService guilds.Service, serverService
 	subCommandHandlers := cmd.HandleSubCommands(commands.SubCommandHandlers{
 		contract.ConfigGetSubCommandName: middlewares.
 			Use(cmd.getRequest),
+		contract.ConfigRSSSubCommandName: middlewares.
+			Use(cmd.checkEnabled, cmd.checkFeedType, cmd.checkChannelID,
+				cmd.checkFollowConstraints, cmd.rssRequest),
 		contract.ConfigServerSubCommandName: middlewares.
 			Use(checkServer, cmd.checkServerChannelID, cmd.serverRequest),
+		contract.ConfigTwitterSubCommandName: middlewares.
+			Use(cmd.checkEnabled, cmd.checkTwitterAccount, cmd.checkChannelID,
+				cmd.checkFollowConstraints, cmd.twitterRequest),
 	})
 
 	cmd.handlers = commands.DiscordHandlers{
@@ -60,10 +74,25 @@ func (command *Command) GetDescriptions(lg discordgo.Locale) []commands.Descript
 			TutorialURL: di18n.Get(lg, fmt.Sprintf("%v.help.tutorial.get", contract.ConfigCommandName)),
 		},
 		{
+			Name:      fmt.Sprintf("/%v rss", contract.ConfigCommandName),
+			CommandID: fmt.Sprintf("</%v rss:%v>", contract.ConfigCommandName, command.DiscordID),
+			Description: di18n.Get(lg, fmt.Sprintf("%v.help.detailed.rss", contract.ConfigCommandName),
+				di18n.Vars{
+					"defaultLocale": i18n.DefaultLocale,
+				}),
+			TutorialURL: di18n.Get(lg, fmt.Sprintf("%v.help.tutorial.rss", contract.ConfigCommandName)),
+		},
+		{
 			Name:        fmt.Sprintf("/%v server", contract.ConfigCommandName),
 			CommandID:   fmt.Sprintf("</%v server:%v>", contract.ConfigCommandName, command.DiscordID),
 			Description: di18n.Get(lg, fmt.Sprintf("%v.help.detailed.server", contract.ConfigCommandName)),
 			TutorialURL: di18n.Get(lg, fmt.Sprintf("%v.help.tutorial.server", contract.ConfigCommandName)),
+		},
+		{
+			Name:        fmt.Sprintf("/%v twitter", contract.ConfigCommandName),
+			CommandID:   fmt.Sprintf("</%v twitter:%v>", contract.ConfigCommandName, command.DiscordID),
+			Description: di18n.Get(lg, fmt.Sprintf("%v.help.detailed.twitter", contract.ConfigCommandName)),
+			TutorialURL: di18n.Get(lg, fmt.Sprintf("%v.help.tutorial.twitter", contract.ConfigCommandName)),
 		},
 	}
 }
@@ -75,6 +104,32 @@ func (command *Command) Matches(i *discordgo.InteractionCreate) bool {
 
 func (command *Command) Handle(s *discordgo.Session, i *discordgo.InteractionCreate) error {
 	return command.CallHandler(s, i, command.handlers)
+}
+
+// followAnnouncement makes targetChannelID follow the announcement channel and
+// returns the webhook Discord created for it. A guild that reached its webhook
+// limit is told so here and reported as not followed, without an error: nothing
+// went wrong on our side, the caller simply has to make room first.
+func (command *Command) followAnnouncement(s *discordgo.Session, i *discordgo.InteractionCreate,
+	newsChannelID, targetChannelID string) (string, bool, error) {
+	chanFollow, err := s.ChannelNewsFollow(newsChannelID, targetChannelID)
+	if err != nil {
+		apiError, ok := discord.ExtractAPIError(err)
+		if ok && apiError.Code == constants.DiscordCodeTooManyWebhooks {
+			content := di18n.Get(i.Locale, "errors.too_many_webhooks")
+			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &content,
+			})
+			if err != nil {
+				log.Error().Err(err).Msg("Too many webhooks error response ignored")
+			}
+			return "", false, nil
+		}
+
+		return "", false, fmt.Errorf("%w: %w", commands.ErrUnavailable, err)
+	}
+
+	return chanFollow.WebhookID, true, nil
 }
 
 func getServerOptions(ctx context.Context) (entities.Server, string, error) {
@@ -94,4 +149,49 @@ func getServerOptions(ctx context.Context) (entities.Server, string, error) {
 	}
 
 	return server, channelID, nil
+}
+
+func getWebhookTwitterOptions(ctx context.Context) (string, entities.TwitterAccount, bool, error) {
+	channelID, ok := ctx.Value(constants.ContextKeyChannel).(string)
+	if !ok {
+		return "", entities.TwitterAccount{}, false,
+			fmt.Errorf("cannot cast %v as string", ctx.Value(constants.ContextKeyChannel))
+	}
+
+	twitterAccount, ok := ctx.Value(constants.ContextKeyTwitter).(entities.TwitterAccount)
+	if !ok {
+		return "", entities.TwitterAccount{}, false,
+			fmt.Errorf("cannot cast %v as entities.TwitterAccount", ctx.Value(constants.ContextKeyTwitter))
+	}
+
+	enabled, ok := ctx.Value(constants.ContextKeyEnabled).(bool)
+	if !ok {
+		return "", entities.TwitterAccount{}, false,
+			fmt.Errorf("cannot cast %v as bool", ctx.Value(constants.ContextKeyEnabled))
+	}
+
+	return channelID, twitterAccount, enabled, nil
+}
+
+func getWebhookRssOptions(ctx context.Context) (
+	string, entities.FeedType, bool, error) {
+	channelID, ok := ctx.Value(constants.ContextKeyChannel).(string)
+	if !ok {
+		return "", entities.FeedType{}, false,
+			fmt.Errorf("cannot cast %v as string", ctx.Value(constants.ContextKeyChannel))
+	}
+
+	feed, ok := ctx.Value(constants.ContextKeyFeed).(entities.FeedType)
+	if !ok {
+		return "", entities.FeedType{}, false,
+			fmt.Errorf("cannot cast %v as entities.FeedType", ctx.Value(constants.ContextKeyFeed))
+	}
+
+	enabled, ok := ctx.Value(constants.ContextKeyEnabled).(bool)
+	if !ok {
+		return "", entities.FeedType{}, false,
+			fmt.Errorf("cannot cast %v as bool", ctx.Value(constants.ContextKeyEnabled))
+	}
+
+	return channelID, feed, enabled, nil
 }

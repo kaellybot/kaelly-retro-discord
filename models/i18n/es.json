@@ -1,11 +1,11 @@
 {
-    "welcome": "¡Hola y gracias por la invitación! :tada:\n\nSoy **{{ .name }}**, tu nuevo asistente de Discord dedicado al juego **{{ .game.Name }}** {{ .gameLogo }}!\n¿Mi objetivo? Ofrecerte herramientas prácticas y divertidas para animar tu experiencia de juego. :fire:\nAquí tienes algunos de mis superpoderes: \n* :sparkles: Gestionar el directorio de artesanos y miembros alineados de tu gremio\n\n¿Tienes curiosidad por ver todo lo que puedo hacer? Escribe {{ .help }} y explora todos mis comandos. :smirk:\n\n<@{{ .owner }}>, como administrador de **{{ .guild }}**, puedes acceder a funciones avanzadas para configurar mis servicios.\nCon `/{{ .config }}`, puedes configurar:\n* :globe_with_meridians: El servidor principal de juego de tu gremio\n\n¿Suena épico, verdad? ¡Estoy emocionado por colaborar contigo para hacer este servidor aún más divertido y útil! :smile:",
+    "welcome": "¡Hola y gracias por la invitación! :tada:\n\nSoy **{{ .name }}**, tu nuevo asistente de Discord dedicado al juego **{{ .game.Name }}** {{ .gameLogo }}!\n¿Mi objetivo? Ofrecerte herramientas prácticas y divertidas para animar tu experiencia de juego. :fire:\nAquí tienes algunos de mis superpoderes: \n* :sparkles: Gestionar el directorio de artesanos y miembros alineados de tu gremio\n\n¿Tienes curiosidad por ver todo lo que puedo hacer? Escribe {{ .help }} y explora todos mis comandos. :smirk:\n\n<@{{ .owner }}>, como administrador de **{{ .guild }}**, puedes acceder a funciones avanzadas para configurar mis servicios.\nCon `/{{ .config }}`, puedes configurar:\n* :globe_with_meridians: El servidor principal de juego de tu gremio\n* :bell: Notificaciones de tweets, feeds RSS del juego\n\n¿Suena épico, verdad? ¡Estoy emocionado por colaborar contigo para hacer este servidor aún más divertido y útil! :smile:",
     "about": {
         "help": {
             "overview": "proporciona información sobre mí y una forma de obtener ayuda",
             "detailed": "proporciona información detallada sobre mí (enlace de invitación, código fuente, manejo de datos privados...) y una forma de obtener ayuda si es necesario (Discord de soporte, Twitter)",
             "source": "",
-            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/about_ES.webp"
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/about_ES.webp"
         },
         "title": "{{ .name }} versión {{ .version }}",
         "desc": "¡Bot de Discord Bot dedicado al juego **{{ .game.Name }}** {{ .gameLogo }}!",
@@ -40,12 +40,12 @@
             "overview": "gestiona el libro de alineamientos",
             "detailed": {
                 "get": "muestra el libro de jugadores alineados de tu servidor de Discord\n   - El campo `city` es opcional y corresponde a la ciudad a la que los jugadores han jurado lealtad. Si no se especifica, el directorio se muestra sin considerar este filtro. *__Ejemplo__:Bonta*\n - El campo `order` es opcional y corresponde al orden al que se han unido los jugadores. Si no se especifica, el directorio se muestra sin considerar este filtro. *__Ejemplo__:Espíritu*\n - El campo `server` es opcional y corresponde al servidor de juego deseado. Si no se especifica, se utiliza el servidor de juego definido para la guilda de Discord (ver `config`). *__Ejemplo__:Boune*",
-                "set": "registra tu alineamiento en el libro, independientemente del servidor de Discord; este registro no puede hacerse para otros.\n   - El campo `city` es obligatorio y corresponde a la ciudad a la que los jugadores han jurado lealtad. *__Ejemplo__:Bonta*\n - El campo `order` es obligatorio y corresponde al orden al que se han unido los jugadores. *__Ejemplo__:Espíritu*\n - El campo `level` es obligatorio y corresponde al nivel de alineamiento entre 0 y 100, siendo 0 la eliminación del directorio. *__Ejemplo__:100*\n - El campo `server` es opcional y corresponde al servidor de juego deseado. Si no se especifica, se utiliza el servidor de juego definido para la guilda de Discord (ver `config`). *__Ejemplo__:Boune*"
+                "set": "registra tu alineamiento en el libro, independientemente del servidor de Discord; este registro no puede hacerse para otros.\n   - El campo `city` es obligatorio y corresponde a la ciudad a la que los jugadores han jurado lealtad. *__Ejemplo__:Bonta*\n - El campo `order` es obligatorio y corresponde al orden al que se han unido los jugadores. *__Ejemplo__:Espíritu*\n - El campo `level` es obligatorio y corresponde al nivel de alineamiento entre 0 y 60, siendo 0 la eliminación del directorio. *__Ejemplo__:60*\n - El campo `server` es opcional y corresponde al servidor de juego deseado. Si no se especifica, se utiliza el servidor de juego definido para la guilda de Discord (ver `config`). *__Ejemplo__:Boune*"
             },
             "source": "Los datos recopilados se utilizan únicamente para mi correcto funcionamiento.",
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_get_ES.webp",
-                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_set_ES.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/align_get_ES.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/align_set_ES.webp"
             }
         },
         "success": "¡El libro de alineamientos ha sido actualizado!",
@@ -68,14 +68,18 @@
     },
     "config": {
         "help": {
-            "overview": "permite configurar el servidor del juego del gremio o de un canal",
+            "overview": "permite configurar el servidor del juego, el envío automático de feeds RSS o tweets",
             "detailed": {
                 "get": "muestra mi configuración actual para este servidor de Discord",
-                "server": "vincula el servidor de Discord a un servidor del juego\n  - El campo `server` es obligatorio y corresponde a un servidor del juego. Una vez especificado, será el valor predeterminado para ciertos comandos como `align` o `job`. *__Ejemplo__:Boune*\n  - El campo `channel` es opcional y se utiliza para vincular un servidor de juego a un canal específico. Este enlace tiene prioridad sobre el enlace al servidor de Discord. *__Ejemplo__:#general*"
+                "rss": "activa/desactiva el envío automático de [feeds RSS](https://es.wikipedia.org/wiki/RSS)\n  - El campo `feed` es obligatorio y corresponde a un tipo de feed RSS. *__Ejemplo__:Devblog*\n  - El campo `enabled` es obligatorio y corresponde a la activación o desactivación de esta función. *__Ejemplo__:Verdadero*\n  - El campo `channel` es opcional y corresponde al canal donde se publicarán los mensajes. Si no se especifica, se utiliza el canal actual. *__Ejemplo__:#general*\n  - El idioma utilizado es el del usuario. Si no está soportado, se usará el idioma predeterminado *{{ .defaultLocale }}*.",
+                "server": "vincula el servidor de Discord a un servidor del juego\n  - El campo `server` es obligatorio y corresponde a un servidor del juego. Una vez especificado, será el valor predeterminado para ciertos comandos como `align` o `job`. *__Ejemplo__:Boune*\n  - El campo `channel` es opcional y se utiliza para vincular un servidor de juego a un canal específico. Este enlace tiene prioridad sobre el enlace al servidor de Discord. *__Ejemplo__:#general*",
+                "twitter": "activa/desactiva el envío automático de tweets de la cuenta oficial de Twitter del juego\n  - El campo `twitter` es obligatorio y corresponde al nombre de una cuenta de Twitter. *__Ejemplo__:DOFUSRetro_ES*\n  - El campo `enabled` es obligatorio y corresponde a la activación o desactivación de esta función. *__Ejemplo__:Verdadero*\n  - El campo `channel` es opcional y corresponde al canal donde se publicarán los mensajes. Si no se especifica, se utiliza el canal actual. *__Ejemplo__:#general*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_get_ES.webp",
-                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_server_ES.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_get_ES.webp",
+                "rss": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_rss_ES.webp",
+                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_server_ES.webp",
+                "twitter": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_twitter_ES.webp"
             },
             "source": "Los datos recopilados se utilizan únicamente para mi correcto funcionamiento."
         },
@@ -85,6 +89,10 @@
             "server": {
                 "name": "{{ .gameLogo }} Canales vinculados a servidores",
                 "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Server.Emoji }} **{{ .Server.Name }}**\n{{ end }}{{ else }}¡No hay canales configurados!{{ end }}"
+            },
+            "webhook": {
+                "name": ":bell: Canales notificados",
+                "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Provider.Emoji }} **{{ .Provider.Name }}**\n{{ end }}{{ else }}¡No hay canales configurados!{{ end }}"
             }
         }
     },
@@ -98,7 +106,7 @@
                 "Bueno... entre nosotros, ¿no vas a caer tan bajo, verdad? :rolling_eyes:",
                 "Ayuda. :nerd:"
             ],
-            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/help.webp",
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/help.webp",
             "source": ""
         },
         "command": {
@@ -127,8 +135,8 @@
                 "set": "registra tu profesión en el directorio, independientemente del servidor de Discord; este registro no puede hacerse para otros.\n    - El campo `job` es obligatorio y corresponde a una profesión del juego. *__Ejemplo__: Leñador*\n - El campo `level` es obligatorio y corresponde al nivel de profesión entre 0 y 100, siendo 0 la eliminación del directorio. *__Ejemplo__: 100*\n - El campo `server` es opcional y corresponde al servidor de juego deseado. Si no se especifica, se utiliza el servidor de juego definido para la guilda de Discord (ver `config`). *__Ejemplo__: Boune*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_get_ES.webp",
-                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_set_ES.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/job_get_ES.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/job_set_ES.webp"
             },
             "source": "Los datos recopilados se utilizan únicamente para mi correcto funcionamiento."
         },
@@ -162,6 +170,10 @@
             "not_found": "¡Ay! '*{{ .value }}*' no coincide con ninguna ciudad que conozca. :pensive:",
             "too_many": "¡Uy! '*{{ .value }}*' coincide con varias ciudades ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }}) :slight_smile:"
         },
+        "feed": {
+            "not_found": "¡Aie! '*{{ .value }}*' no corresponde a ningún feed RSS que conozca. :pensive:",
+            "too_many": "¡Outch! '*{{ .value }}*' coincide con demasiados feeds RSS ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
         "job": {
             "not_found": "¡Aie! '*{{ .value }}*' no corresponde a ningún oficio que conozca. :pensive:",
             "too_many": "¡Outch! '*{{ .value }}*' coincide con demasiados oficios ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
@@ -180,11 +192,20 @@
             "required": "¡Ups! Parece que no hay ningún servidor de {{ .game.Name }} vinculado a tu gremio (o canal). Usa la opción server como `/job get job: Alquimista server: Boune` o vincula tu gremio con un servidor usando el comando `/config server`. :grin:",
             "not_found": "¡Aie! '*{{ .value }}*' no corresponde a ningún servidor que conozca. :pensive:",
             "too_many": "¡Outch! '*{{ .value }}*' coincide con demasiados servidores ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! Vuelve a intentarlo seleccionando uno existente en la lista. :slight_smile:"
+        },
+        "twitterAccount": {
+            "not_found": "¡Aie! '*{{ .value }}*' no corresponde a ninguna cuenta de Twitter que conozca. :pensive:",
+            "too_many": "¡Outch! '*{{ .value }}*' coincide con demasiadas cuentas de Twitter ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "webhook": {
+            "permission": "¡No tengo permiso para gestionar webhooks! Lo siento, no puedo hacer más sin este permiso :(",
+            "targetChannelType": "¡Lo siento! Solo puedo configurar notificaciones en los canales de texto del servidor :("
         }
     },
     "errors": {
         "unavailable": "¡Mi cerebro no responde en este momento :sweat: Dame un minuto y vuelve a intentarlo!",
-        "unknown_interaction": "Hmm, no conozco esta interacción... Puede que venga de un mensaje obsoleto, ¡vuelve a lanzar el comando! :sweat_smile:"
+        "unknown_interaction": "Hmm, no conozco esta interacción... Puede que venga de un mensaje obsoleto, ¡vuelve a lanzar el comando! :sweat_smile:",
+        "too_many_webhooks": "¡El número máximo de webhooks ha sido alcanzado en este canal! No puedo continuar...\n*(Haz clic en el icono del canal :gear:, luego `Integraciones` y finalmente `Webhooks` para gestionarlos)*"
     },
     "panic": [
         "He encontrado un error :frowning:... ¡Esto será procesado lo antes posible!",

@@ -7,7 +7,7 @@
 Application to interact with Discord written in Go, dedicated to **DOFUS Retro**.
 
 It is a stripped-down fork of [kaelly-discord](https://github.com/kaellybot/kaelly-discord): it only serves
-`/about`, `/help`, `/align`, `/job` and `/config` (`get` and `server`), and tags every AMQP message with
+`/about`, `/help`, `/align`, `/job` and `/config` (`get`, `rss`, `server` and `twitter`), and tags every AMQP message with
 `DOFUS_RETRO`.
 
 ## Local Development

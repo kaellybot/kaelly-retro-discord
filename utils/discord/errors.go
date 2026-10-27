@@ -2,6 +2,7 @@ package discord
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kaellybot/kaelly-retro-discord/commands"
@@ -9,6 +10,23 @@ import (
 	i18n "github.com/kaysoro/discordgo-i18n"
 	"github.com/rs/zerolog/log"
 )
+
+func ExtractAPIError(err error) (*discordgo.APIErrorMessage, bool) {
+	// Find JSON portion of the error
+	startIndex := strings.Index(err.Error(), "{")
+	if startIndex == -1 {
+		return nil, false
+	}
+
+	// Parse JSON error into discordgo.APIErrorMessage
+	var discordError discordgo.APIErrorMessage
+	jsonPart := err.Error()[startIndex:]
+	if errJSON := discordgo.Unmarshal([]byte(jsonPart), &discordError); errJSON != nil {
+		return nil, false
+	}
+
+	return &discordError, true
+}
 
 // AnswerError tells the caller what went wrong, in their language, and records
 // it for us. It is the only place mapping a failure to a message: handlers

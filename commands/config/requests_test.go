@@ -17,12 +17,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// guildSession returns a session where the current and the other channels are
-// cached text channels of the guild.
-func guildSession(t *testing.T) (*discordgo.Session, *testutils.FakeDiscord) {
+// webhookReadySession returns a session where the current channel is a text
+// channel the bot may manage webhooks in.
+func webhookReadySession(t *testing.T) (*discordgo.Session, *testutils.FakeDiscord) {
 	t.Helper()
 	s, fake := testutils.NewDiscordSession(t)
-	addGuild(t, s, textChannel(currentChannel), textChannel(otherChannel))
+	addGuild(t, s, discordgo.PermissionManageWebhooks,
+		textChannel(currentChannel), textChannel(otherChannel))
 	return s, fake
 }
 
@@ -79,7 +80,7 @@ func TestHandle_MessageComponentsAreIgnored(t *testing.T) {
 func TestHandle_ServerBindsResolvedServerToChannel(t *testing.T) {
 	f := newFixture(t)
 	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
-	s, fake := guildSession(t)
+	s, fake := webhookReadySession(t)
 
 	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
 		stringOption(contract.ConfigServerOptionName, "dja"), otherChannelOption())))
@@ -127,6 +128,221 @@ func TestHandle_ServerWithoutServerOptionIsReported(t *testing.T) {
 	assert.Empty(t, f.manager.calls)
 }
 
+// ---- rss ----
+
+func frenchNewsFeed() entities.FeedType {
+	return feedType("news", "Actualités",
+		entities.FeedSource{Locale: amqp.Language_EN, FeedTypeID: "news", NewsChannelID: "news-rss-en"},
+		entities.FeedSource{Locale: amqp.Language_FR, FeedTypeID: "news", NewsChannelID: "news-rss-fr"},
+	)
+}
+
+func TestHandle_RSSFollowsSourceMatchingCallerLocale(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 200,
+		Body: `{"webhook_id":"wh-rss"}`})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(true))))
+
+	assert.Equal(t, "/api/v9/channels/news-rss-fr/followers", fake.Last(t).Path)
+	req := singleRequest(t, f).message.GetConfigurationSetNotificationRequest()
+	assert.Equal(t, amqp.NotificationType_RSS, req.GetNotificationType())
+	assert.Equal(t, "news", req.GetLabel(), "the feed type ID is the label")
+	assert.Equal(t, "wh-rss", req.GetWebhookId())
+	assert.Equal(t, currentChannel, req.GetChannelId())
+	assert.True(t, req.GetEnabled())
+}
+
+func TestHandle_RSSDisableDoesNotFollow(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
+	s, fake := webhookReadySession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(false))))
+
+	assert.Empty(t, fake.Requests())
+	req := singleRequest(t, f).message.GetConfigurationSetNotificationRequest()
+	assert.Empty(t, req.GetWebhookId())
+	assert.False(t, req.GetEnabled())
+}
+
+func TestHandle_RSSEnableFollowsSourceIntoTargetChannel(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 200,
+		Body: `{"channel_id":"news-rss-fr","webhook_id":"wh-42"}`})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(true), otherChannelOption())))
+
+	follow := fake.Last(t)
+	assert.Equal(t, "POST", follow.Method)
+	assert.Equal(t, "/api/v9/channels/news-rss-fr/followers", follow.Path)
+	var body struct {
+		WebhookChannelID string `json:"webhook_channel_id"`
+	}
+	follow.Decode(t, &body)
+	assert.Equal(t, otherChannel, body.WebhookChannelID)
+
+	req := singleRequest(t, f).message.GetConfigurationSetNotificationRequest()
+	assert.Equal(t, "wh-42", req.GetWebhookId())
+	assert.Equal(t, otherChannel, req.GetChannelId())
+	assert.True(t, req.GetEnabled())
+}
+
+func TestHandle_RSSTooManyWebhooksAnswersErrorWithoutRequest(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 400,
+		Body: `{"code":30007,"message":"Maximum number of webhooks reached (15)"}`})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(true))), "a guild out of webhooks is told so, not reported as a failure")
+
+	assert.Empty(t, f.manager.calls)
+	assertEditedWebhook(t, fake)
+	assert.Equal(t, testutils.Translations(t, discordgo.French, "errors.too_many_webhooks")[0],
+		editContent(t, fake))
+}
+
+func TestHandle_RSSOtherFollowFailureIsReportedAsUnavailable(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 403,
+		Body: `{"code":50013,"message":"Missing Permissions"}`})
+
+	err := f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(true)))
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, commands.ErrUnavailable, "a Discord API refusal is a dependency failure")
+	assert.Empty(t, f.manager.calls)
+}
+
+func TestHandle_RSSStopsWhenTargetChannelIsNotAllowed(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
+	s, fake := testutils.NewDiscordSession(t)
+	addGuild(t, s, 0, textChannel(currentChannel))
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(true))))
+
+	assert.Empty(t, f.manager.calls)
+	assert.Equal(t, testutils.Translations(t, discordgo.French, "checks.webhook.permission")[0],
+		editContent(t, fake))
+}
+
+func TestHandle_RSSWithoutSourceForLocaleFollowsDefaultLocaleSource(t *testing.T) {
+	// Italian and the other locales the bot does not translate have no source
+	// of their own; they get the default language instead of an error.
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{feedType("news", "Actualités",
+		entities.FeedSource{Locale: amqp.Language_EN, FeedTypeID: "news", NewsChannelID: "news-rss-en"})}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 200,
+		Body: `{"webhook_id":"wh-rss-en"}`})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(true))))
+
+	assert.Equal(t, "/api/v9/channels/news-rss-en/followers", fake.Last(t).Path)
+	req := singleRequest(t, f).message.GetConfigurationSetNotificationRequest()
+	assert.Equal(t, "wh-rss-en", req.GetWebhookId())
+	assert.True(t, req.GetEnabled())
+}
+
+func TestHandle_RSSWithoutAnySourceIsReported(t *testing.T) {
+	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{feedType("news", "Actualités")}
+	s, _ := webhookReadySession(t)
+
+	err := f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"),
+		enabledOption(false)))
+
+	require.EqualError(t, err, "cannot find feed source for 'news' in French")
+	assert.Empty(t, f.manager.calls)
+}
+
+func TestHandle_RSSUnknownFeedStopsBeforeChannelChecks(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t) // empty state: channel checks would fail
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "nope"),
+		enabledOption(true))))
+
+	assert.Empty(t, f.manager.calls)
+	assert.Contains(t, editContent(t, fake), "'*nope*'")
+}
+
+// ---- twitter ----
+
+func TestHandle_TwitterFollowsAccountNewsChannel(t *testing.T) {
+	f := newFixture(t)
+	f.twitters.found = []entities.TwitterAccount{{ID: "dofusfr", Name: "DOFUSfr", NewsChannelID: "news-tw"}}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 200,
+		Body: `{"webhook_id":"wh-tw"}`})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigTwitterSubCommandName,
+		stringOption(contract.ConfigTwitterAccountOptionName, "dofus"),
+		enabledOption(true))))
+
+	assert.Equal(t, "/api/v9/channels/news-tw/followers", fake.Last(t).Path)
+	req := singleRequest(t, f).message.GetConfigurationSetNotificationRequest()
+	assert.Equal(t, amqp.NotificationType_TWITTER, req.GetNotificationType())
+	assert.Equal(t, "dofusfr", req.GetLabel())
+	assert.Equal(t, "wh-tw", req.GetWebhookId())
+	assert.True(t, req.GetEnabled())
+}
+
+func TestHandle_TwitterTooManyWebhooksAnswersError(t *testing.T) {
+	f := newFixture(t)
+	f.twitters.found = []entities.TwitterAccount{{ID: "dofusfr", Name: "DOFUSfr", NewsChannelID: "news-tw"}}
+	s, fake := webhookReadySession(t)
+	fake.Respond(testutils.DiscordResponse{Method: "POST", PathContains: "/followers", Status: 400,
+		Body: `{"code":30007}`})
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigTwitterSubCommandName,
+		stringOption(contract.ConfigTwitterAccountOptionName, "dofus"),
+		enabledOption(true))), "a guild out of webhooks is told so, not reported as a failure")
+
+	assert.Empty(t, f.manager.calls)
+	assert.Equal(t, testutils.Translations(t, discordgo.French, "errors.too_many_webhooks")[0],
+		editContent(t, fake))
+}
+
+func TestHandle_TwitterDisableDoesNotFollow(t *testing.T) {
+	f := newFixture(t)
+	f.twitters.found = []entities.TwitterAccount{{ID: "dofusfr", Name: "DOFUSfr", NewsChannelID: "news-tw"}}
+	s, fake := webhookReadySession(t)
+
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigTwitterSubCommandName,
+		stringOption(contract.ConfigTwitterAccountOptionName, "dofus"),
+		enabledOption(false))))
+
+	assert.Empty(t, fake.Requests())
+	req := singleRequest(t, f).message.GetConfigurationSetNotificationRequest()
+	assert.Empty(t, req.GetWebhookId())
+	assert.False(t, req.GetEnabled())
+}
+
 // ---- option extraction ----
 
 func TestGetOptions_WrongContextTypesAreErrors(t *testing.T) {
@@ -136,6 +352,23 @@ func TestGetOptions_WrongContextTypesAreErrors(t *testing.T) {
 	_, _, err = getServerOptions(context.WithValue(
 		context.WithValue(ctx, constants.ContextKeyServer, entities.Server{}), constants.ContextKeyChannel, 42))
 	require.Error(t, err, "a non-string channel is rejected")
+
+	withChannel := channelCtx("c")
+
+	_, _, _, err = getWebhookTwitterOptions(ctx)
+	require.Error(t, err)
+	_, _, _, err = getWebhookTwitterOptions(withChannel)
+	require.Error(t, err)
+	_, _, _, err = getWebhookTwitterOptions(
+		context.WithValue(withChannel, constants.ContextKeyTwitter, entities.TwitterAccount{}))
+	require.Error(t, err)
+
+	_, _, _, err = getWebhookRssOptions(ctx)
+	require.Error(t, err)
+	_, _, _, err = getWebhookRssOptions(withChannel)
+	require.Error(t, err)
+	_, _, _, err = getWebhookRssOptions(context.WithValue(withChannel, constants.ContextKeyFeed, entities.FeedType{}))
+	require.Error(t, err)
 }
 
 // ---- answers ----
@@ -178,6 +411,79 @@ func TestServerRespond_InvalidAnswerIsReported(t *testing.T) {
 	}
 }
 
+func notificationAnswer(removeWebhook bool) *amqp.RabbitMQMessage {
+	return &amqp.RabbitMQMessage{
+		Type:     amqp.RabbitMQMessage_CONFIGURATION_SET_NOTIFICATION_ANSWER,
+		Status:   amqp.RabbitMQMessage_SUCCESS,
+		Language: amqp.Language_FR,
+		ConfigurationSetNotificationAnswer: &amqp.ConfigurationSetNotificationAnswer{
+			WebhookId: "wh-old", RemoveWebhook: removeWebhook,
+		},
+	}
+}
+
+func TestSetNotificationRespond_KeepWebhookOnlyEdits(t *testing.T) {
+	f := newFixture(t)
+	s, fake := testutils.NewDiscordSession(t)
+
+	require.NoError(t, f.cmd.setNotificationRespond(context.Background(), s, configCommand("rss"),
+		notificationAnswer(false), nil))
+
+	require.Len(t, fake.Requests(), 1)
+	assertEditedWebhook(t, fake)
+	assert.Equal(t, testutils.Translations(t, discordgo.French, "config.success")[0], editContent(t, fake))
+}
+
+func TestSetNotificationRespond_RemoveWebhookDeletesItBeforeEditing(t *testing.T) {
+	for name, deleteStatus := range map[string]int{
+		"deleted":         204,
+		"already deleted": 404,
+		"delete failure":  403,
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t)
+			s, fake := testutils.NewDiscordSession(t)
+			fake.Respond(testutils.DiscordResponse{Method: "DELETE", PathContains: "/webhooks/wh-old",
+				Status: deleteStatus, Body: `{"code":0}`})
+
+			require.NoError(t, f.cmd.setNotificationRespond(context.Background(), s, configCommand("rss"),
+				notificationAnswer(true), nil))
+
+			requests := fake.Requests()
+			require.Len(t, requests, 2)
+			assert.Equal(t, "DELETE", requests[0].Method)
+			assert.Equal(t, "/api/v9/webhooks/wh-old", requests[0].Path)
+			assertEditedWebhook(t, fake)
+			assert.Equal(t, testutils.Translations(t, discordgo.French, "config.success")[0],
+				editContent(t, fake), "deletion errors never block the confirmation")
+		})
+	}
+}
+
+func TestSetNotificationRespond_InvalidAnswerIsReported(t *testing.T) {
+	failed := notificationAnswer(false)
+	failed.Status = amqp.RabbitMQMessage_FAILED
+	wrongType := notificationAnswer(false)
+	wrongType.Type = amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_ANSWER
+	missingAnswer := notificationAnswer(false)
+	missingAnswer.ConfigurationSetNotificationAnswer = nil
+
+	for name, message := range map[string]*amqp.RabbitMQMessage{
+		"failed status": failed, "wrong type": wrongType, "missing answer": missingAnswer,
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newFixture(t)
+			s, fake := testutils.NewDiscordSession(t)
+
+			err := f.cmd.setNotificationRespond(context.Background(), s, configCommand("rss"), message, nil)
+
+			require.ErrorIs(t, err, commands.ErrInvalidAnswerMessage)
+			assert.ErrorIs(t, err, commands.ErrUnavailable, "a backend that failed is worth a retry")
+			assert.Empty(t, fake.Requests())
+		})
+	}
+}
+
 func configGetAnswer(answer *amqp.ConfigurationGetAnswer) *amqp.RabbitMQMessage {
 	return &amqp.RabbitMQMessage{
 		Type:                   amqp.RabbitMQMessage_CONFIGURATION_GET_ANSWER,
@@ -190,12 +496,21 @@ func configGetAnswer(answer *amqp.ConfigurationGetAnswer) *amqp.RabbitMQMessage 
 func TestGetRespond_BuildsEmbedFromGuildAndValidChannels(t *testing.T) {
 	f := newFixture(t)
 	f.servers.byID = map[string]entities.Server{"djaul": server("djaul", "Djaul", "")}
+	f.feeds.byID = map[string]*entities.FeedType{"news": {ID: "news", Labels: []entities.FeedTypeLabel{
+		{Locale: amqp.Language_FR, FeedTypeID: "news", Label: "Actualités"}}}}
 	s, fake := testutils.NewDiscordSession(t)
 	fake.Respond(testutils.DiscordResponse{PathContains: "/guilds/" + guildID, Status: 200,
 		Body: `{"id":"` + guildID + `","name":"Les Kaellistes","icon":"abc"}`})
-	fake.Respond(testutils.DiscordResponse{PathContains: "/channels/ch-a", Status: 200,
-		Body: `{"id":"ch-a","guild_id":"` + guildID + `"}`})
+	for _, id := range []string{"ch-a", "ch-b"} {
+		fake.Respond(testutils.DiscordResponse{PathContains: "/channels/" + id, Status: 200,
+			Body: `{"id":"` + id + `","guild_id":"` + guildID + `"}`})
+	}
 	fake.Respond(testutils.DiscordResponse{PathContains: "/channels/ch-gone", Status: 404, Body: `{"code":10003}`})
+	fake.Respond(testutils.DiscordResponse{PathContains: "/webhooks/wh-ok", Status: 200,
+		Body: `{"id":"wh-ok","channel_id":"ch-a","guild_id":"` + guildID + `"}`})
+	fake.Respond(testutils.DiscordResponse{PathContains: "/webhooks/wh-moved", Status: 200,
+		Body: `{"id":"wh-moved","channel_id":"ch-elsewhere","guild_id":"` + guildID + `"}`})
+	fake.Respond(testutils.DiscordResponse{PathContains: "/webhooks/wh-deleted", Status: 404, Body: `{"code":10015}`})
 
 	require.NoError(t, f.cmd.getRespond(context.Background(), s, configCommand("get"),
 		configGetAnswer(&amqp.ConfigurationGetAnswer{
@@ -204,7 +519,12 @@ func TestGetRespond_BuildsEmbedFromGuildAndValidChannels(t *testing.T) {
 			ServerChannels: []*amqp.ConfigurationGetAnswer_ServerChannel{
 				{ChannelId: "ch-a", ServerId: "djaul"},
 				{ChannelId: "ch-gone", ServerId: "djaul"},
-				{ChannelId: "ch-a", ServerId: "djaul"},
+			},
+			NotifiedChannels: []*amqp.ConfigurationGetAnswer_NotifiedChannel{
+				{ChannelId: "ch-a", WebhookId: "wh-ok", Label: "news", NotificationType: amqp.NotificationType_RSS},
+				{ChannelId: "ch-b", WebhookId: "wh-moved", Label: "news", NotificationType: amqp.NotificationType_RSS},
+				{ChannelId: "ch-b", WebhookId: "wh-deleted", Label: "news",
+					NotificationType: amqp.NotificationType_RSS},
 			},
 		}), nil))
 
@@ -216,9 +536,11 @@ func TestGetRespond_BuildsEmbedFromGuildAndValidChannels(t *testing.T) {
 	assert.Equal(t, "Les Kaellistes", embed.Title)
 	assert.Equal(t, discordgo.EndpointGuildIcon(guildID, "abc")+"?size=128", embed.Thumbnail.URL)
 	assert.Contains(t, embed.Description, "**Djaul**")
-	require.Len(t, embed.Fields, 1)
-	assert.Equal(t, "<#ch-a> :djaul: **Djaul**\n<#ch-a> :djaul: **Djaul**\n", embed.Fields[0].Value,
+	require.Len(t, embed.Fields, 2)
+	assert.Equal(t, "<#ch-a> :djaul: **Djaul**\n", embed.Fields[0].Value,
 		"channels Discord cannot resolve are dropped")
+	assert.Equal(t, "<#ch-a> :rss: **Actualités**\n", embed.Fields[1].Value,
+		"webhooks that moved or vanished are dropped")
 
 	channelFetches := 0
 	for _, req := range fake.Requests() {
@@ -273,26 +595,27 @@ func TestGetRespond_FailedStatusIsReported(t *testing.T) {
 
 func TestHandle_CallbacksWiredToMatchingResponders(t *testing.T) {
 	f := newFixture(t)
+	f.feeds.found = []entities.FeedType{frenchNewsFeed()}
 	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
-	s, fake := guildSession(t)
+	s, fake := webhookReadySession(t)
 
-	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigGetSubCommandName)))
 	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
 		stringOption(contract.ConfigServerOptionName, "dja"))))
+	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigRSSSubCommandName,
+		stringOption(contract.ConfigFeedTypeOptionName, "actu"), enabledOption(false))))
 	require.Len(t, f.manager.calls, 2)
 
-	// get callback only accepts successful answers
-	require.ErrorIs(t, f.manager.calls[0].callback(context.Background(), s, configCommand("get"),
-		setServerAnswer(amqp.RabbitMQMessage_FAILED, amqp.RabbitMQMessage_CONFIGURATION_GET_ANSWER), nil),
-		commands.ErrInvalidAnswerMessage)
-
 	// server callback only accepts server answers
-	require.ErrorIs(t, f.manager.calls[1].callback(context.Background(), s, configCommand("server"),
-		setServerAnswer(amqp.RabbitMQMessage_SUCCESS, amqp.RabbitMQMessage_CONFIGURATION_GET_ANSWER), nil),
-		commands.ErrInvalidAnswerMessage)
-	require.NoError(t, f.manager.calls[1].callback(context.Background(), s, configCommand("server"),
+	require.ErrorIs(t, f.manager.calls[0].callback(context.Background(), s, configCommand("server"),
+		notificationAnswer(false), nil), commands.ErrInvalidAnswerMessage)
+	require.NoError(t, f.manager.calls[0].callback(context.Background(), s, configCommand("server"),
 		setServerAnswer(amqp.RabbitMQMessage_SUCCESS, amqp.RabbitMQMessage_CONFIGURATION_SET_SERVER_ANSWER), nil))
 	assert.Equal(t, testutils.Translations(t, discordgo.EnglishGB, "config.success")[0], editContent(t, fake))
+
+	// notification callback only accepts notification answers
+	require.NoError(t, f.manager.calls[1].callback(context.Background(), s, configCommand("rss"),
+		notificationAnswer(false), nil))
+	assert.Equal(t, testutils.Translations(t, discordgo.French, "config.success")[0], editContent(t, fake))
 }
 
 // A thread has no configuration of its own: binding one binds the channel it
@@ -301,7 +624,7 @@ func TestHandle_ServerBoundToAThreadBindsItsParentChannel(t *testing.T) {
 	f := newFixture(t)
 	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
 	s, _ := testutils.NewDiscordSession(t)
-	addGuild(t, s, textChannel(currentChannel), textChannel(otherChannel),
+	addGuild(t, s, 0, textChannel(currentChannel), textChannel(otherChannel),
 		&discordgo.Channel{ID: "thread-1", ParentID: otherChannel,
 			Type: discordgo.ChannelTypeGuildPublicThread})
 
@@ -321,7 +644,7 @@ func TestHandle_ServerBoundToARegularChannelIsUnchanged(t *testing.T) {
 	f := newFixture(t)
 	f.servers.found = []entities.Server{server("djaul", "Djaul", "")}
 	s, _ := testutils.NewDiscordSession(t)
-	addGuild(t, s, textChannel(currentChannel), textChannel(otherChannel))
+	addGuild(t, s, 0, textChannel(currentChannel), textChannel(otherChannel))
 
 	require.NoError(t, f.cmd.Handle(s, configCommand(contract.ConfigServerSubCommandName,
 		stringOption(contract.ConfigServerOptionName, "dja"), otherChannelOption())))

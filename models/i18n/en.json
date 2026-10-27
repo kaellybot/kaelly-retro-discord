@@ -1,11 +1,11 @@
 {
-    "welcome": "Hello and thanks for the invitation! :tada:\n\nI’m **{{ .name }}**, your new Discord assistant dedicated to the game **{{ .game.Name }}** {{ .gameLogo }}!\nMy goal? To offer you practical and fun tools to spice up your gaming experience. :fire:\nHere are some of my superpowers: \n* :sparkles: Manage the directory of artisans and aligned members in your guild\n\nCurious to see everything I can do? Type {{ .help }} and explore all my commands! :smirk:\n\n<@{{ .owner }}>, as the administrator of **{{ .guild }}**, you can access advanced features to configure my services.\nWith `/{{ .config }}`, set up:\n* :globe_with_meridians: The main game server for your guild\n\nSounds epic, right? Can’t wait to team up with you to make this server even more fun and useful! :smile:",
+    "welcome": "Hello and thanks for the invitation! :tada:\n\nI’m **{{ .name }}**, your new Discord assistant dedicated to the game **{{ .game.Name }}** {{ .gameLogo }}!\nMy goal? To offer you practical and fun tools to spice up your gaming experience. :fire:\nHere are some of my superpowers: \n* :sparkles: Manage the directory of artisans and aligned members in your guild\n\nCurious to see everything I can do? Type {{ .help }} and explore all my commands! :smirk:\n\n<@{{ .owner }}>, as the administrator of **{{ .guild }}**, you can access advanced features to configure my services.\nWith `/{{ .config }}`, set up:\n* :globe_with_meridians: The main game server for your guild\n* :bell: Notifications for tweets, RSS feeds from the game\n\nSounds epic, right? Can’t wait to team up with you to make this server even more fun and useful! :smile:",
     "about": {
         "help": {
             "overview": "provides information about me and a way to get help",
             "detailed": "provides detailed information about me (invitation link, source code, handling of private data...) and a way to get help if needed (support Discord, Twitter)",
             "source": "",
-            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/about_EN.webp"
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/about_EN.webp"
         },
         "title": "{{ .name }} version {{ .version }}",
         "desc": "Discord bot dedicated to the **{{ .game.Name }}** {{ .gameLogo }} game!",
@@ -40,11 +40,11 @@
             "overview": "handles the alignment book",
             "detailed": {
                 "get": "displays the book of aligned players on your Discord server\n   - The `city` field is optional and corresponds to the city to which players have pledged allegiance. If not specified, the directory is displayed without considering this filter. *__Example__:Bonta*\n - The `order` field is optional and corresponds to the order joined by players. If not specified, the directory is displayed without considering this filter. *__Example__:Spirit*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*",
-                "set": "records your alignment in the book, independently of the Discord server; this recording cannot be done for others.\n   - The `city` field is mandatory and corresponds to the city to which players have pledged allegiance. *__Example__:Bonta*\n - The `order` field is mandatory and corresponds to the order joined by players. *__Example__:Spirit*\n - The `level` field is mandatory and corresponds to the alignment level between 0 and 100, with 0 indicating removal from the directory. *__Example__:100*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*"
+                "set": "records your alignment in the book, independently of the Discord server; this recording cannot be done for others.\n   - The `city` field is mandatory and corresponds to the city to which players have pledged allegiance. *__Example__:Bonta*\n - The `order` field is mandatory and corresponds to the order joined by players. *__Example__:Spirit*\n - The `level` field is mandatory and corresponds to the alignment level between 0 and 60, with 0 indicating removal from the directory. *__Example__:60*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_get_EN.webp",
-                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/align_set_EN.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/align_get_EN.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/align_set_EN.webp"
             },
             "source": "The collected data is used only for my proper functioning."
         },
@@ -68,14 +68,18 @@
     },
     "config": {
         "help": {
-            "overview": "permits to configure the game server of the guild or of a channel",
+            "overview": "permits to configure the game server, RSS feeds or tweets automatic sendings",
             "detailed": {
                 "get": "displays my current configuration for this Discord server",
-                "server": "links the Discord server to a game server\n  - The `server` field is mandatory and corresponds to a game server. Once specified, it will be the default value for certain commands such as `align` or `job`. *__Example__:Boune*\n  - The `channel` field is optional and is used to link a game server to a specific channel. This link takes priority over the link to the Discord server. *__Example__:#general*"
+                "rss": "enables/disables the automatic sending of [RSS feeds](https://en.wikipedia.org/wiki/RSS)\n  - The `feed` field is mandatory and corresponds to a type of RSS feed. *__Example__:Devblog*\n  - The `enabled` field is mandatory and corresponds to the activation or deactivation of this feature. *__Example__:True*\n  - The `channel` field is optional and corresponds to the channel where messages will be posted. If not specified, the current channel is used. *__Example__:#general*\n  - The language used is the user's language. If it is not supported, the default language *{{ .defaultLocale }}* will be used.",
+                "server": "links the Discord server to a game server\n  - The `server` field is mandatory and corresponds to a game server. Once specified, it will be the default value for certain commands such as `align` or `job`. *__Example__:Boune*\n  - The `channel` field is optional and is used to link a game server to a specific channel. This link takes priority over the link to the Discord server. *__Example__:#general*",
+                "twitter": "enables/disables the automatic sending of tweets from the official Twitter account of the game\n  - The `twitter` field is mandatory and corresponds to a Twitter creator name. *__Example__:DofusRETRO_EN*\n  - The `enabled` field is mandatory and corresponds to the activation or deactivation of this feature. *__Example__:True*\n  - The `channel` field is optional and corresponds to the channel where messages will be posted. If not specified, the current channel is used. *__Example__:#general*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_get_EN.webp",
-                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/config_server_EN.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_get_EN.webp",
+                "rss": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_rss_EN.webp",
+                "server": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_server_EN.webp",
+                "twitter": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/config_twitter_EN.webp"
             },
             "source": "The collected data is used only for my proper functioning."
         },
@@ -85,6 +89,10 @@
             "server": {
                 "name": "{{ .gameLogo }} Channels linked to servers",
                 "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Server.Emoji }} **{{ .Server.Name }}**\n{{ end }}{{ else }}No configured channels!{{ end }}"
+            },
+            "webhook": {
+                "name": ":bell: Notified channels",
+                "value": "{{ if .channels}}{{ range .channels }}{{ .Channel }} {{ .Provider.Emoji }} **{{ .Provider.Name }}**\n{{ end }}{{ else }}No configured channels!{{ end }}"
             }
         }
     },
@@ -98,7 +106,7 @@
                 "Well... between us, you're not going to stoop to that, are you? :rolling_eyes:",
                 "It helps. :nerd:"
             ],
-            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/help.webp",
+            "tutorial": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/help.webp",
             "source": ""
         },
         "command": {
@@ -127,8 +135,8 @@
                 "set": "records your profession in the book, independently of the Discord server; this recording cannot be done for others.\n    - The `job` field is mandatory and corresponds to a profession in the game. *__Example__:Lumberjack*\n - The `level` field is mandatory and corresponds to the job level between 0 and 100, with 0 indicating removal from the directory. *__Example__:100*\n - The `server` field is optional and corresponds to the desired game server. If not specified, the game server used is the one defined for the Discord guild (see `config`). *__Example__:Boune*"
             },
             "tutorial": {
-                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_get_EN.webp",
-                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellybot/tutorials/job_set_EN.webp"
+                "get": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/job_get_EN.webp",
+                "set": "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/tutorials/job_set_EN.webp"
             },
             "source": "The collected data is used only for my proper functioning."
         },
@@ -162,6 +170,10 @@
             "not_found": "Oops! '*{{ .value }}*' doesn't match any city I know! :pensive:",
             "too_many": "Yikes! '*{{ .value }}*' matches several cities ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
         },
+        "feed": {
+            "not_found": "Aie! '*{{ .value }}*' does not correspond to any RSS feeds I know! :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' matches too many RSS feeds ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
         "job": {
             "not_found": "Aie! '*{{ .value }}*' does not correspond to any jobs I know! :pensive:",
             "too_many": "Outch! '*{{ .value }}*' matches too many jobs ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
@@ -180,11 +192,20 @@
             "required": "Oops! It seems no {{ .game.Name }} server is linked to your guild (or your channel), use the server option like `/job get job: Alchemist server: Boune` or link your guild to a server with `/config server` command :grin:",
             "not_found": "Aie! '*{{ .value }}*' does not correspond to any servers I know! :pensive:",
             "too_many": "Outch! '*{{ .value }}*' matches too many servers ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! Retry by selecting an existing one in the list :slight_smile:"
+        },
+        "twitterAccount": {
+            "not_found": "Aie! '*{{ .value }}*' does not correspond to any Twitter accounts I know! :pensive:",
+            "too_many": "Outch! '*{{ .value }}*' matches too many Twitter accounts ({{ if .collection }}{{$first := true}}{{ range .collection}}{{if $first}}{{$first = false}}{{else}}, {{end}}{{ . }}{{ end }}{{ end }})! :slight_smile:"
+        },
+        "webhook": {
+            "permission": "I don't have the right to manage webhooks! Sorry I can't do anything more without this permission :(",
+            "targetChannelType": "Sorry! I can only set up notifications in standard server text channels :("
         }
     },
     "errors": {
         "unavailable": "My brain is not answering right now :sweat: Give me a minute and try again!",
-        "unknown_interaction": "Hmm, I don't know this interaction... It may come from an outdated message, try the command again! :sweat_smile:"
+        "unknown_interaction": "Hmm, I don't know this interaction... It may come from an outdated message, try the command again! :sweat_smile:",
+        "too_many_webhooks": "Webhooks maximum number reached on this channel, I can't continue...\n*(Click on the channel icon :gear: then `Integrations` and finally `Webhooks` to handle them)*"
     },
     "panic": [
         "I have encountered an error :frowning:... This will be processed as soon as possible!",
