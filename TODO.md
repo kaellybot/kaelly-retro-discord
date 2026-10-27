@@ -60,13 +60,13 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 
 ## Other services
 
-- [x] kaelly-books: accept `DOFUS_RETRO` (BOOK-2 only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise `/align` and `/job` fail; deploy it with a tag
+- [x] kaelly-books: accept `DOFUS_RETRO` (BOOK-2 only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise `/align` and `/job` fail (deployed)
 - [x] kaelly-rss / kaelly-twitter: checked, Retro rows are read and published as `DOFUS_RETRO` like the other games
 - [x] kaelly-notifier: serve Retro (`DISCORD_TOKEN_DOFUS_RETRO`, bot `KaellyRetro`)
 - [x] kaelly-notifier: its CI reads `RETRO_DISCORD_TOKEN`, which must exist **before** deploying: the notifier refuses to start without a served game's token, Dofus included. Retro news published until then is lost
-- [ ] kaelly-notifier: restart after inserting Retro data, it loads `feed_sources` and `twitter_accounts` only at startup
+- [x] kaelly-notifier: restart after inserting Retro data, it loads `feed_sources` and `twitter_accounts` only at startup
 - [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
-- [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails; deploy it with a tag
+- [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails (deployed)
 - [ ] Dashboards: group or filter by the `game` tag (`DOFUS_RETRO`), so Retro requests aren't mixed with Dofus ones
 
 ## Deployment
