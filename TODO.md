@@ -44,10 +44,10 @@ Labels use `locale` FR=1, EN=2, ES=3, DE=4, PT=5. EN is the fallback, so it is m
 
 Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/`: `cities/` (bonta, brakmar), `jobs/` (33), `servers/icons/` and `servers/images/` (allisteria, boune, fallanster).
 
-- [ ] `servers` + `server_labels` (`game = 3`, `icon`, `image`)
-- [ ] `jobs` + `job_labels` (`game = 3`, `icon`, `color`)
-- [ ] `cities` + `city_labels` (`game = 3`, `icon`, `type` light/dark, `color`)
-- [ ] `orders` + `order_labels` (`game = 3`)
+- [x] `servers` + `server_labels` (`game = 3`, `icon`, `image`)
+- [x] `jobs` + `job_labels` (`game = 3`, `icon`, `color`)
+- [x] `cities` + `city_labels` (`game = 3`, `icon`, `type` light/dark, `color`)
+- [x] `orders` + `order_labels` (`game = 3`)
 - [x] `feed_sources` (`game = 3`, `feed_type_id`, `locale`, `url`, `news_channel_id`): feed types and their labels are shared with DOFUS
 - [x] `twitter_accounts` (`game = 3`, `id`, `name`, `locale`, `news_channel_id`)
 - [ ] `emojis` rows for Retro IDs unknown to Dofus (the table is shared, it has no `game` column)
@@ -60,13 +60,13 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 
 ## Other services
 
-- [ ] kaelly-books: accept `DOFUS_RETRO` (BOOK-2 only accepts `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise `/align` and `/job` fail
+- [x] kaelly-books: accept `DOFUS_RETRO` (BOOK-2 only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise `/align` and `/job` fail; deploy it with a tag
 - [x] kaelly-rss / kaelly-twitter: checked, Retro rows are read and published as `DOFUS_RETRO` like the other games
 - [x] kaelly-notifier: serve Retro (`DISCORD_TOKEN_DOFUS_RETRO`, bot `KaellyRetro`)
 - [x] kaelly-notifier: its CI reads `RETRO_DISCORD_TOKEN`, which must exist **before** deploying: the notifier refuses to start without a served game's token, Dofus included. Retro news published until then is lost
 - [ ] kaelly-notifier: restart after inserting Retro data, it loads `feed_sources` and `twitter_accounts` only at startup
 - [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
-- [ ] kaelly-configurator: check that `/config server` writes with `game = 3`
+- [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails; deploy it with a tag
 - [ ] Dashboards: group or filter by the `game` tag (`DOFUS_RETRO`), so Retro requests aren't mixed with Dofus ones
 
 ## Deployment
