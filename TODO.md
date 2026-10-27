@@ -33,10 +33,10 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 
 - [x] kaelly-commands v1.1.0: `GetRetroCommands()`
 - [x] kaelly-commands v1.1.1: Retro alignment capped at 60, `/config rss` and `/config twitter` for Retro
-- [ ] `/config` description for Retro: the registrar's `config.description` mentions Almanax
-- [x] Registrar: `GAME` (1/2/3) picks the command set, kaelly-commands v1.1.1, second Helm release `kaelly-registrar-retro` (done locally)
-- [ ] Registrar: create the `RETRO_CLIENT_ID` GitHub secret (`1239972754132832256`); the token comes from `RETRO_DISCORD_TOKEN`
-- [ ] Register the Retro commands and copy the returned IDs into the `RETRO_ABOUT_ID`, `RETRO_ALIGN_ID`, `RETRO_CONFIG_ID`, `RETRO_HELP_ID` and `RETRO_JOB_ID` secrets
+- [x] `/config` description for Retro: the registrar's `config.description` no longer mentions Almanax, and fits Discord's 100 characters
+- [x] Registrar: `GAME` (1/2/3) picks the command set, kaelly-commands v1.1.1, second Helm release `kaelly-registrar-retro`
+- [x] Registrar: no `RETRO_CLIENT_ID` secret, it runs locally with `GAME=3`, `CLIENT_ID=1239972754132832256`, `TOKEN=<retro token>`, `PRODUCTION=true`
+- [x] Register the Retro commands and copy the returned IDs into the `RETRO_ABOUT_ID`, `RETRO_ALIGN_ID`, `RETRO_CONFIG_ID`, `RETRO_HELP_ID` and `RETRO_JOB_ID` secrets
 
 ## Data
 
@@ -62,8 +62,8 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 
 - [ ] kaelly-books: accept `DOFUS_RETRO` (BOOK-2 only accepts `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise `/align` and `/job` fail
 - [x] kaelly-rss / kaelly-twitter: checked, Retro rows are read and published as `DOFUS_RETRO` like the other games
-- [x] kaelly-notifier: serve Retro (`DISCORD_TOKEN_DOFUS_RETRO`, bot `KaellyRetro`), done locally
-- [ ] kaelly-notifier: its CI reads `RETRO_DISCORD_TOKEN`, which must exist **before** deploying: the notifier refuses to start without a served game's token, Dofus included. Retro news published until then is lost
+- [x] kaelly-notifier: serve Retro (`DISCORD_TOKEN_DOFUS_RETRO`, bot `KaellyRetro`)
+- [x] kaelly-notifier: its CI reads `RETRO_DISCORD_TOKEN`, which must exist **before** deploying: the notifier refuses to start without a served game's token, Dofus included. Retro news published until then is lost
 - [ ] kaelly-notifier: restart after inserting Retro data, it loads `feed_sources` and `twitter_accounts` only at startup
 - [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
 - [ ] kaelly-configurator: check that `/config server` writes with `game = 3`
@@ -71,7 +71,7 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 
 ## Deployment
 
-- [ ] Create the Retro secrets: `RETRO_DISCORD_TOKEN`, `RETRO_DISCORD_SHARD_COUNT` (plus the command IDs above). MySQL, RabbitMQ, ports, log level and production reuse KaellyBot's secrets
+- [x] Create the Retro secrets: `RETRO_DISCORD_TOKEN`, `RETRO_DISCORD_SHARD_COUNT` (plus the command IDs above). MySQL, RabbitMQ, ports, log level and production reuse KaellyBot's secrets
 - [ ] First release (the Helm deployment runs on tags)
 - [ ] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
 
