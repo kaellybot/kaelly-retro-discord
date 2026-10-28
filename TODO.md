@@ -67,7 +67,8 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [x] kaelly-notifier: restart after inserting Retro data, it loads `feed_sources` and `twitter_accounts` only at startup
 - [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
 - [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails (deployed)
-- [ ] Dashboards: group or filter by the `game` tag (`DOFUS_RETRO`), so Retro requests aren't mixed with Dofus ones
+- [x] KaellyTouch (Java, `Kaysoro/KaellyBot` branch `DevTouch`): `!server`, `!job`, `!align` and `!whois` on Allisteria, Boune or Fallanster (stored there as Touch servers) answer with a KaellyRetro invitation instead, and `!server -list` hides them
+- [ ] KaellyTouch: rebuild and restart it from `DevTouch` so the redirection is live
 
 ## Deployment
 
