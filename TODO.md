@@ -13,7 +13,7 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 - [x] CI: `RETRO_` secrets for what differs from KaellyBot (token, shard count, command IDs), KaellyBot's own secrets for the rest
 - [x] kaelly-commands upgraded to v1.1.1
 - [x] First commit
-- [ ] Decide which bot to recommend for unsupported features, and where to mention it (welcome, `/about`, `/help`), in the 5 languages
+- [ ] Postponed: decide which bot to recommend for unsupported features, and where to mention it (welcome, `/about`, `/help`), in the 5 languages
 - [ ] Upload the tutorial screenshots to `kaelly-cdn/kaellyretro/tutorials/`: `help.webp`, then `<name>_<LANG>.webp` (LANG = DE, EN, ES, FR, PT) for `about`, `align_get`, `align_set`, `config_get`, `config_rss`, `config_server`, `config_twitter`, `job_get`, `job_set`
 - [x] `/about` links the three bots (KaellyBot, KaellyTouch, KaellyRetro), in kaelly-discord too: the `about_<LANG>.webp` screenshots of both bots must show this new field
 - [x] Help examples: `Devblog` for `/config rss`, the Retro accounts for `/config twitter` (`DofusRETRO_EN` for EN and DE, `DOFUSRetro_FR`, `DOFUSRetro_ES`, `DOFUSRetro_PTBR`)
@@ -23,7 +23,7 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 ## Discord applications
 
 - [x] Create the Retro Discord application (production)
-- [ ] Development application, if needed
+- [x] Development application: not needed
 - [x] Upload the emojis to each Retro application:
   - [x] Cities
   - [x] Orders
@@ -69,7 +69,7 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [x] kaelly-notifier: serve Retro (`DISCORD_TOKEN_DOFUS_RETRO`, bot `KaellyRetro`)
 - [x] kaelly-notifier: its CI reads `RETRO_DISCORD_TOKEN`, which must exist **before** deploying: the notifier refuses to start without a served game's token, Dofus included. Retro news published until then is lost
 - [x] kaelly-notifier: restart after inserting Retro data, it loads `feed_sources` and `twitter_accounts` only at startup
-- [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
+- [x] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
 - [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails (deployed)
 - [x] KaellyTouch (Java, `Kaysoro/KaellyBot` branch `DevTouch`): `!server`, `!job`, `!align` and `!whois` on Allisteria, Boune or Fallanster (stored there as Touch servers) answer with a KaellyRetro invitation instead, and `!server -list` hides them
 - [x] Migrate KaellyTouch's Allisteria, Boune and Fallanster job and alignment books to Retro (`game = 3`): 17,001 job rows (Touch's Façonneur becomes `forgeurdeboucliers`, levels capped at 100) and 2 alignment rows (capped at 60). Guild servers, channel servers and RSS/Twitter subscriptions are not migrated
@@ -81,8 +81,8 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [x] First release `v0.0.1` (the Helm deployment runs on tags)
 - [x] Release `v1.0.0` (deployed)
 - [x] CI: Helm deployed once per release (`published` only), without `--force-replace` that Helm 4 refuses on upgrades
-- [ ] kaelly-discord: same CI fix before its next release
-- [ ] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
+- [x] kaelly-discord: same CI fix
+- [x] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
 
 ## Documentation
 
