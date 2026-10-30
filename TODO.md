@@ -23,12 +23,12 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 
 - [x] Create the Retro Discord application (production)
 - [ ] Development application, if needed
-- [ ] Upload the emojis to each Retro application:
+- [x] Upload the emojis to each Retro application:
   - [x] Cities
   - [x] Orders
   - [x] Jobs
   - [x] Servers
-  - [ ] Miscellaneous
+  - [x] Miscellaneous: `global` and `scroll` aren't needed, they fall back on their unicode `name`
 
 ## kaelly-commands / kaelly-registrar
 
@@ -51,13 +51,13 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [x] `orders` + `order_labels` (`game = 3`)
 - [x] `feed_sources` (`game = 3`, `feed_type_id`, `locale`, `url`, `news_channel_id`): feed types and their labels are shared with DOFUS
 - [x] `twitter_accounts` (`game = 3`, `id`, `name`, `locale`, `news_channel_id`)
-- [ ] `emojis` rows for Retro IDs unknown to Dofus (the table is shared, it has no `game` column)
-- [ ] `emoji_snowflakes` (`game = 3`, `production` 1 and/or 0) for:
-  - [ ] `Server`: each server
-  - [ ] `Job`: each job
-  - [ ] `City`: each city
-  - [ ] `Order`: `light<order>`, `dark<order>` and `<order>` for each order
-  - [ ] `Miscellaneous`: `first`, `previous`, `next`, `last`, `global`, `scroll`, `github`, `twitter`, `rss`, `dofusGame` (Retro logo)
+- [x] `emojis` rows for Retro IDs unknown to Dofus (the table is shared, it has no `game` column): created along with servers, jobs and cities (foreign key)
+- [x] `emoji_snowflakes` (`game = 3`, `production = 1`) for:
+  - [x] `Server`: each server
+  - [x] `Job`: each job
+  - [x] `City`: each city
+  - [x] `Order`: `<order>`, `light<order>` and `dark<order>`, the order IDs being `esprit`, `coeur` and `oeil`
+  - [x] `Miscellaneous`: `global` and `scroll` fall back on their unicode `name`
 
 ## Other services
 
@@ -69,12 +69,14 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
 - [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails (deployed)
 - [x] KaellyTouch (Java, `Kaysoro/KaellyBot` branch `DevTouch`): `!server`, `!job`, `!align` and `!whois` on Allisteria, Boune or Fallanster (stored there as Touch servers) answer with a KaellyRetro invitation instead, and `!server -list` hides them
+- [ ] Migrate KaellyTouch's Allisteria, Boune and Fallanster job and alignment books to Retro (`game = 3`) right after restarting KaellyTouch, since the redirection tells users their data is already there. Guild servers, channel servers and RSS/Twitter subscriptions are not migrated
 - [ ] KaellyTouch: rebuild and restart it from `DevTouch` so the redirection is live
 
 ## Deployment
 
 - [x] Create the Retro secrets: `RETRO_DISCORD_TOKEN`, `RETRO_DISCORD_SHARD_COUNT` (plus the command IDs above). MySQL, RabbitMQ, ports, log level and production reuse KaellyBot's secrets
 - [x] First release `v0.0.1` (the Helm deployment runs on tags)
+- [ ] Release `v1.0.0`: the tag is pushed, creating its GitHub release deploys it
 - [ ] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
 
 ## Documentation
