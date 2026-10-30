@@ -15,6 +15,7 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 - [x] First commit
 - [ ] Decide which bot to recommend for unsupported features, and where to mention it (welcome, `/about`, `/help`), in the 5 languages
 - [ ] Upload the tutorial screenshots to `kaelly-cdn/kaellyretro/tutorials/`: `help.webp`, then `<name>_<LANG>.webp` (LANG = DE, EN, ES, FR, PT) for `about`, `align_get`, `align_set`, `config_get`, `config_rss`, `config_server`, `config_twitter`, `job_get`, `job_set`
+- [x] `/about` links the three bots (KaellyBot, KaellyTouch, KaellyRetro), in kaelly-discord too: the `about_<LANG>.webp` screenshots of both bots must show this new field
 - [x] Help examples: `Devblog` for `/config rss`, the Retro accounts for `/config twitter` (`DofusRETRO_EN` for EN and DE, `DOFUSRetro_FR`, `DOFUSRetro_ES`, `DOFUSRetro_PTBR`)
 - [x] Boune as the example server in the help texts (a Retro server on the CDN)
 
