@@ -72,8 +72,8 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [ ] Retro application: member of the server hosting the Retro news channels (post and crosspost), and of the one hosting the shared reporting channel (`REPORTING_CHANNEL_ID`), where it posts its join/leave reports
 - [x] kaelly-configurator: accept `DOFUS_RETRO` (`isGameSupported` only accepted `DOFUS_GAME` and `DOFUS_TOUCH`), otherwise every `/config` write and guild join fails (deployed)
 - [x] KaellyTouch (Java, `Kaysoro/KaellyBot` branch `DevTouch`): `!server`, `!job`, `!align` and `!whois` on Allisteria, Boune or Fallanster (stored there as Touch servers) answer with a KaellyRetro invitation instead, and `!server -list` hides them
-- [ ] Migrate KaellyTouch's Allisteria, Boune and Fallanster job and alignment books to Retro (`game = 3`) right after restarting KaellyTouch, since the redirection tells users their data is already there. Guild servers, channel servers and RSS/Twitter subscriptions are not migrated
-- [ ] KaellyTouch: rebuild and restart it from `DevTouch` so the redirection is live
+- [x] Migrate KaellyTouch's Allisteria, Boune and Fallanster job and alignment books to Retro (`game = 3`): 17,001 job rows (Touch's Façonneur becomes `forgeurdeboucliers`, levels capped at 100) and 2 alignment rows (capped at 60). Guild servers, channel servers and RSS/Twitter subscriptions are not migrated
+- [x] KaellyTouch: rebuilt and restarted from `DevTouch`, the redirection is live
 
 ## Deployment
 
