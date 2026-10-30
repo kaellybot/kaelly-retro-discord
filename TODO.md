@@ -81,9 +81,9 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 - [x] First release `v0.0.1` (the Helm deployment runs on tags)
 - [x] Release `v1.0.0` (deployed)
 - [x] CI: Helm deployed once per release (`published` only), without `--force-replace` that Helm 4 refuses on upgrades
-- [x] kaelly-discord: same CI fix
+- [x] kaelly-discord: same CI fix; kaelly-notifier, kaelly-books and kaelly-configurator also deploy on `published` only
 - [x] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
 
 ## Documentation
 
-- [ ] kaelly-amqp `docs/specs/game-isolation.md` §4.10: kaelly-commands is shared (one function per game) instead of forked
+- [x] kaelly-amqp `docs/specs/game-isolation.md` §4.10: kaelly-commands and kaelly-registrar are shared (one command set per game, `GAME` in the registrar) instead of forked
