@@ -18,6 +18,7 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 - [x] `/about` links the three bots (KaellyBot, KaellyTouch, KaellyRetro), in kaelly-discord too: the `about_<LANG>.webp` screenshots of both bots must show this new field
 - [x] Help examples: `Devblog` for `/config rss`, the Retro accounts for `/config twitter` (`DofusRETRO_EN` for EN and DE, `DOFUSRetro_FR`, `DOFUSRetro_ES`, `DOFUSRetro_PTBR`)
 - [x] Boune as the example server in the help texts (a Retro server on the CDN)
+- [x] `/job`: no job dropdown, Retro's 33 jobs exceed Discord's 25 options per select menu; `/job get` and its autocompletion cover them
 
 ## Discord applications
 
@@ -38,6 +39,8 @@ Tick items as they are done. Scope: `/about`, `/help`, `/align`, `/job` and `/co
 - [x] Registrar: `GAME` (1/2/3) picks the command set, kaelly-commands v1.1.1, second Helm release `kaelly-registrar-retro`
 - [x] Registrar: no `RETRO_CLIENT_ID` secret, it runs locally with `GAME=3`, `CLIENT_ID=1239972754132832256`, `TOKEN=<retro token>`, `PRODUCTION=true`
 - [x] Register the Retro commands and copy the returned IDs into the `RETRO_ABOUT_ID`, `RETRO_ALIGN_ID`, `RETRO_CONFIG_ID`, `RETRO_HELP_ID` and `RETRO_JOB_ID` secrets
+- [x] kaelly-commands v1.1.2: level descriptions state each game's maximum (`{{ .max }}`), registrar upgraded and commands re-registered for the 3 games
+- [x] Commands registered by mistake with `PRODUCTION=false` (development guild) removed: `PUT /applications/<CLIENT_ID>/guilds/299167247279194112/commands` with `[]`, the registrar's `DeleteCommands` only handles global commands
 
 ## Data
 
@@ -76,7 +79,9 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 
 - [x] Create the Retro secrets: `RETRO_DISCORD_TOKEN`, `RETRO_DISCORD_SHARD_COUNT` (plus the command IDs above). MySQL, RabbitMQ, ports, log level and production reuse KaellyBot's secrets
 - [x] First release `v0.0.1` (the Helm deployment runs on tags)
-- [ ] Release `v1.0.0`: the tag is pushed, creating its GitHub release deploys it
+- [x] Release `v1.0.0` (deployed)
+- [x] CI: Helm deployed once per release (`published` only), without `--force-replace` that Helm 4 refuses on upgrades
+- [ ] kaelly-discord: same CI fix before its next release
 - [ ] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
 
 ## Documentation
