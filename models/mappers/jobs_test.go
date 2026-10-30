@@ -1,6 +1,7 @@
 package mappers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
@@ -115,6 +116,20 @@ func TestMapJobBookToWebhook_UnknownJobAndServerAndNoCraftsmen(t *testing.T) {
 	for _, option := range selectMenu(t, rows[0]).Options {
 		assert.False(t, option.Default)
 	}
+}
+
+func TestMapJobBookToWebhook_TooManyJobsForASelectMenu(t *testing.T) {
+	books := fakeBooks{}
+	for i := range constants.MaxChoices + 1 {
+		books.jobs = append(books.jobs, entities.Job{ID: fmt.Sprintf("job%02d", i)})
+	}
+	answer := &amqp.JobGetBookAnswer{JobId: "job00", ServerId: "srv", Pages: 2}
+
+	edit := MapJobBookToWebhook(answer, nil, books, fakeServers{}, fakeEmojis{}, discordgo.French)
+
+	rows := actionRows(t, edit.Components)
+	require.Len(t, rows, 1, "only the pagination row: a select menu holds 25 options at most")
+	assert.Len(t, buttons(t, rows[0]), 2)
 }
 
 func TestMapJobBookToWebhook_LeavesCallerCraftsmenUnsorted(t *testing.T) {

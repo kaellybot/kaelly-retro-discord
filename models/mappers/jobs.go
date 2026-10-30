@@ -88,8 +88,15 @@ func mapJobBookToComponents(answer *amqp.JobGetBookAnswer, lg discordgo.Locale,
 		)
 	}
 
+	// A select menu holds 1 to 25 options and DOFUS Retro has more jobs than that:
+	// the menu is left out, /job get and its autocompletion cover every job.
+	jobs := jobService.GetJobs()
+	if len(jobs) == 0 || len(jobs) > constants.MaxChoices {
+		return &components
+	}
+
 	jobChoices := make([]discordgo.SelectMenuOption, 0)
-	for _, job := range jobService.GetJobs() {
+	for _, job := range jobs {
 		jobChoices = append(jobChoices, discordgo.SelectMenuOption{
 			Label:   translators.GetEntityLabel(job, lg),
 			Value:   job.ID,
