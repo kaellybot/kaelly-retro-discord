@@ -74,7 +74,7 @@ Icons and images are on the CDN under `https://raw.githubusercontent.com/kaellyb
 ## Deployment
 
 - [x] Create the Retro secrets: `RETRO_DISCORD_TOKEN`, `RETRO_DISCORD_SHARD_COUNT` (plus the command IDs above). MySQL, RabbitMQ, ports, log level and production reuse KaellyBot's secrets
-- [ ] First release (the Helm deployment runs on tags)
+- [x] First release `v0.0.1` (the Helm deployment runs on tags)
 - [ ] After deploy: no "No entity emoji found" / "No miscellaneous emoji found" warnings in the logs
 
 ## Documentation

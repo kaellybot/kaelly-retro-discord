@@ -2,7 +2,7 @@ package constants
 
 const (
 	Name        = "KaellyRetro"
-	Version     = "1.0.0"
+	Version     = "0.0.1"
 	Color       = 12543562
 	AvatarIcon  = "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/id/face.webp"
 	AvatarImage = "https://raw.githubusercontent.com/kaellybot/kaelly-cdn/refs/heads/main/kaellyretro/id/full_body.webp"

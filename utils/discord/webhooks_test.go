@@ -123,8 +123,8 @@ func TestBuildDefaultFooter_Localized(t *testing.T) {
 		locale   discordgo.Locale
 		expected string
 	}{
-		{discordgo.EnglishGB, "KaellyRetro v1.0.0 • Slash commands available!"},
-		{discordgo.French, "KaellyRetro v1.0.0 • Commandes Slash disponibles !"},
+		{discordgo.EnglishGB, constants.Name + " v" + constants.Version + " • Slash commands available!"},
+		{discordgo.French, constants.Name + " v" + constants.Version + " • Commandes Slash disponibles !"},
 	}
 	for _, tc := range cases {
 		footer := BuildDefaultFooter(tc.locale)
